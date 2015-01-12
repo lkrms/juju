@@ -1,0 +1,86 @@
+{
+    "name": "org.lkrms.juju.core",
+    "namespace": "jj",
+    "tablePrefix": "core_",
+    "tables":
+    [
+        {
+            "name": "user",
+            "namespace": "jj.security",
+            "columns":
+            [
+                {
+                    "name": "username",
+                    "type": "varchar",
+                    "size": 50,
+                    "primaryKey": true,
+                    "required": true
+                }, {
+                    "name": "password",
+                    "type": "varchar",
+                    "size": 32
+                }, {
+                    "name": "first_name",
+                    "type": "varchar",
+                    "size": 50
+                }, {
+                    "name": "last_name",
+                    "type": "varchar",
+                    "size": 50
+                }, {
+                    "name": "locked",
+                    "type": "boolean",
+                    "required": true,
+                    "defaultValue": false
+                }, {
+                    "name": "super_user",
+                    "type": "boolean",
+                    "required": true,
+                    "defaultValue": false
+                }, {
+                    "name": "groups",
+                    "type": "objectSet",
+                    "objectType": "group",
+                    "objectStorageTable": "user_group"
+                }
+            ],
+            "indexes":
+            {
+                "login":
+                [
+                    "username",
+                    "password",
+                    "locked"
+                ]
+            }
+        }, {
+            "name": "group",
+            "namespace": "jj.security",
+            "columns":
+            [
+                {
+                    "name": "group_id",
+                    "type": "bigint",
+                    "primaryKey": true,
+                    "required": true,
+                    "autoIncrement": true
+                }, {
+                    "name": "group_name",
+                    "type": "varchar",
+                    "size": 50,
+                    "required": true
+                }, {
+                    "name": "group_desc",
+                    "type": "text"
+                }
+            ],
+            "uniqueIndexes":
+            {
+                "group_name":
+                [
+                    "group_name"
+                ]
+            }
+        }
+    ]
+}
