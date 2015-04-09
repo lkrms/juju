@@ -351,6 +351,52 @@ class jj_orm_schema_Compiler
             $class->Prepare();
         }
     }
+
+    /**
+     * Checks for changes to schema definition files. For each changed schema, identifies new, changed or deleted entities in the database and brings it up-to-date.
+     *
+     * @param boolean $forceCheck If true, schema entities will be checked even if their definition files are unchanged.
+     */
+    public static function CheckAllSchemas($forceCheck = false)
+    {
+        global $JJ_SCHEMAS;
+
+        // if the cache folder is emptied, a full schema check will be forced
+        $stateFile = jj_Common::GetCacheFolder() . "/schema.state";
+
+        // assume we've never checked any schemas
+        $state         = array();
+        $stateChanged  = false;
+
+        if (file_exists($stateFile))
+        {
+            jj_Assert::IsWritable($stateFile, "schema state file");
+
+            if ( ! $forceCheck)
+            {
+                $state = json_decode(file_get_contents($stateFile), true);
+            }
+        }
+
+        foreach ($JJ_SCHEMAS as $schemaFile)
+        {
+            jj_Assert::FileExists($schemaFile, "schema file");
+            $schemaFile  = realpath($schemaFile);
+            $modified    = filemtime($schemaFile);
+
+            if ( ! isset($state[$schemaFile]) || $modified > $state[$schemaFile])
+            {
+                // TODO: actually update the database from the schema
+                $state[$schemaFile]  = $modified;
+                $stateChanged        = true;
+            }
+        }
+
+        if ($stateChanged)
+        {
+            file_put_contents($stateFile, json_encode($state));
+        }
+    }
 }
 
 // PRETTY_NESTED_ARRAYS,0

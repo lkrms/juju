@@ -20,6 +20,7 @@ require_once (JJ_ROOT . "/core.config.php");
 // load __autoload dependencies
 require_once ($JJ_CLASS_MAP["jj"] . "/Autoload.php");
 require_once ($JJ_CLASS_MAP["jj"] . "/Assert.php");
+require_once ($JJ_CLASS_MAP["jj"] . "/Common.php");
 require_once ($JJ_CLASS_MAP["jj"] . "/Exception.php");
 
 // load ADOdb
@@ -103,22 +104,10 @@ function _bool2yn($val, $default = false)
     return jj_Common::BooleanToYesNo($val, $default);
 }
 
-/**
- * Shorthand for {@link jj_security_User::CheckACL() User->CheckACL}.
- *
- */
-function _checkACL($acl)
-{
-    return jj_security_User::CheckACL($acl);
-}
-
 // required to maintain user sessions
 session_start();
 
-// best not to proceed if, say, a schema upgrade is in progress ;)
-//if (jj_Maintenance::IsMaintenanceInProgress() && ! defined("JJ_IS_MAINTENANCE"))
-//{
-//    throw new jj_Exception("System maintenance is in progress. Please try again shortly.", jj_Exception::CODE_GENERAL_ERROR, false);
-//}
+// perform any required schema updates
+jj_orm_schema_Compiler::CheckAllSchemas();
 
 ?>

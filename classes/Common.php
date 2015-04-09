@@ -5,10 +5,29 @@
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2013 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
 abstract class jj_Common
 {
+    private static $_cacheFolder;
+
+    /**
+     * Checks that the cache folder exists and is writable, then returns its full path.
+     *
+     * @return string The full path to the cache folder.
+     */
+    public static function GetCacheFolder()
+    {
+        if ( ! self::$_cacheFolder)
+        {
+            $folder = JJ_ROOT . "/.cache";
+            jj_Assert::IsWritable($folder, "cache folder");
+            self::$_cacheFolder = $folder;
+        }
+
+        return self::$_cacheFolder;
+    }
+
     /**
      * Searches for the given value in the given array, and removes it if found.
      *

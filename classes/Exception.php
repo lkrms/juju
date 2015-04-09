@@ -90,6 +90,7 @@ class jj_Exception extends Exception
             trigger_error($ex2->getMessage(), E_USER_WARNING);
         }
 
+        // if logging to the database fails, display the error to the user
         trigger_error($ex->getMessage(), E_USER_WARNING);
     }
 }

@@ -16,4 +16,11 @@ if ( ! isset($GLOBALS["JJ_CLASS_MAP"]))
 
 $JJ_CLASS_MAP["jj"] = JJ_ROOT . "/classes";
 
+if ( ! isset($GLOBALS["JJ_SCHEMAS"]))
+{
+    $JJ_SCHEMAS = array();
+}
+
+$JJ_SCHEMAS[] = JJ_ROOT . "/core.schema.json";
+
 ?>

@@ -5,24 +5,10 @@
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2013 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
 abstract class jj_Autoload
 {
-    private static $_cacheFolder;
-
-    private static function GetCacheFolder()
-    {
-        if ( ! self::$_cacheFolder)
-        {
-            $folder = JJ_ROOT . "/.cache";
-            jj_Assert::IsWritable($folder, "cache folder");
-            self::$_cacheFolder = $folder;
-        }
-
-        return self::$_cacheFolder;
-    }
-
     /**
      * Returns the path to the code file for the given class.
      *
@@ -35,7 +21,7 @@ abstract class jj_Autoload
         global $JJ_CLASS_MAP;
 
         // check if we've cached the location of this class, otherwise locate it and cache
-        $locationFile = self::GetCacheFolder() . "/{$className}.location";
+        $locationFile = jj_Common::GetCacheFolder() . "/{$className}.location";
 
         if ( ! (file_exists($locationFile) && file_exists($filename = file_get_contents($locationFile))))
         {
@@ -49,6 +35,7 @@ abstract class jj_Autoload
 
             if ($fullNamespace && isset($JJ_CLASS_MAP[$fullNamespace]))
             {
+                // this picks up classes at the root of modules too
                 $path = $JJ_CLASS_MAP[$fullNamespace] . "/{$classFile}.php";
             }
             elseif ($module && $classPath && isset($JJ_CLASS_MAP[$module]))
