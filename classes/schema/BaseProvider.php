@@ -5,10 +5,113 @@
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2013 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
 abstract class jj_schema_BaseProvider
 {
+    /**
+     * @var jj_data_Connection
+     */
+    protected $_conn;
+
+    protected $_tables = array();
+
+    protected function __construct(jj_data_Connection $conn)
+    {
+        $this->_conn = $conn;
+
+        // for future reference / comparison, we're going to need to know the current state of the database
+        $tableNames = $this->GetTables();
+
+        foreach ($tableNames as $tableName)
+        {
+            $this->_tables[$tableName] = $this->GetColumns($tableName);
+        }
+    }
+
+    /**
+     * Returns a schema provider instance for the given database connection.
+     *
+     * @param jj_data_Connection $conn Connection to the target database.
+     * @return jj_schema_BaseProvider New schema provider instance.
+     */
+    public static function ByConnection(jj_data_Connection $conn)
+    {
+        jj_Assert::IsNotNull($conn, "conn");
+
+        switch ($conn->Type)
+        {
+            case jj_data_Connection::TYPE_MYSQL:
+
+                return new jj_schema_MySqlProvider($conn);
+
+                break;
+
+            default:
+
+                throw new jj_Exception("Connection type $conn->Type isn't supported for schema management.");
+        }
+    }
+
+    public function HasTable($table)
+    {
+        return array_key_exists($table, $this->_tables);
+    }
+
+    public function HasColumn($table, $column)
+    {
+        if ($this->HasTable($table))
+        {
+            return array_key_exists($column, $this->_tables[$table]);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    /**
+     * @return jj_schema_ColumnInfo
+     */
+    public function GetColumn($table, $column)
+    {
+        if ($this->HasColumn($table, $column))
+        {
+            return $this->_tables[$table][$column];
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    /**
+     * Returns TRUE if the database column described in $column matches the schema property in $property.
+     *
+     * The comparison needs to be handled by the provider because some databases only support a subset of schema features,
+     * which could lead to unnecessary mismatches being identified by the base provider, forcing expensive database changes.
+     *
+     * @param jj_schema_ColumnInfo $column Database column.
+     * @param jj_orm_schema_CompilerProperty $property Schema property.
+     * @return boolean TRUE if the column and property match, FALSE otherwise.
+     */
+    abstract public function ColumnMatches(jj_schema_ColumnInfo $column, jj_orm_schema_CompilerProperty $property);
+
+    /**
+     * Returns an array of table names for every table currently in the target database.
+     *
+     * @return array An array of table names.
+     */
+    abstract protected function GetTables();
+
+    /**
+     * Returns an array of jj_schema_ColumnInfo objects for every column currently in the given table of the target database.
+     *
+     * @param string $table The table name.
+     * @return array An array of jj_schema_ColumnInfo objects, keyed by column name.
+     */
+    abstract protected function GetColumns($table);
+
     /**
      * Returns SQL to create the given table.
      *

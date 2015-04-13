@@ -112,6 +112,16 @@ class jj_data_Connection
     }
 
     /**
+     * Returns the jj_data_ConnectionInfo object associated with this connection.
+     *
+     * @return jj_data_ConnectionInfo
+     */
+    public function GetInfo()
+    {
+        return $this->_info;
+    }
+
+    /**
      * Executes a query against the database and returns the number of rows affected.
      *
      * @param string $sql The query to execute.

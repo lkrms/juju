@@ -21,6 +21,8 @@ if ( ! isset($GLOBALS["JJ_SCHEMAS"]))
     $JJ_SCHEMAS = array();
 }
 
-$JJ_SCHEMAS[] = JJ_ROOT . "/core.schema.json";
+array_unshift($JJ_SCHEMAS, array(JJ_ROOT . "/core.schema.json", null));
+
+// PRETTY_NESTED_ARRAYS,0
 
 ?>

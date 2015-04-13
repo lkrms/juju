@@ -9,7 +9,7 @@
  */
 class jj_orm_schema_CompilerProperty
 {
-    public $FieldName;
+    public $ColumnName;
 
     public $PropertyName;
 
@@ -22,8 +22,6 @@ class jj_orm_schema_CompilerProperty
     public $Size;
 
     public $Scale;
-
-    public $ValueSet;
 
     public $AutoIncrement = false;
 
@@ -38,6 +36,12 @@ class jj_orm_schema_CompilerProperty
 
     public $ObjectStorageTable;
 
+    protected $IsPrepared = false;
+
+    public $ColumnExists;
+
+    public $ColumnIsCurrent;
+
     /**
      * @var jj_orm_schema_CompilerClass
      */
@@ -48,16 +52,50 @@ class jj_orm_schema_CompilerProperty
      */
     private $_compiler;
 
-    public function __construct(jj_orm_schema_CompilerClass $class, $fieldName)
+    public function __construct(jj_orm_schema_CompilerClass $class, $columnName)
     {
         $this->_class        = $class;
         $this->_compiler     = $class->GetCompiler();
-        $this->FieldName     = $fieldName;
-        $this->PropertyName  = jj_Common::GetCamelCase($fieldName);
+        $this->ColumnName    = $columnName;
+        $this->PropertyName  = jj_Common::GetCamelCase($columnName);
     }
 
     public function Prepare()
     {
+        if ($this->IsPrepared)
+        {
+            return;
+        }
+
+        if ( ! $this->_class->SkipPhp)
+        {
+        }
+
+        if ( ! $this->_class->SkipSql)
+        {
+            if ($this->_class->TableExists)
+            {
+                $provider            = $this->_compiler->GetProvider();
+                $column              = $provider->GetColumn($this->_class->FullTableName, $this->ColumnName);
+                $this->ColumnExists  = ! is_null($column);
+
+                if ($this->ColumnExists)
+                {
+                    $this->ColumnIsCurrent = $provider->ColumnMatches($column, $this);
+                }
+                else
+                {
+                    $this->ColumnIsCurrent = false;
+                }
+            }
+            else
+            {
+                $this->ColumnExists     = false;
+                $this->ColumnIsCurrent  = false;
+            }
+        }
+
+        $this->IsPrepared = true;
     }
 }
 

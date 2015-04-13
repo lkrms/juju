@@ -125,7 +125,7 @@ class jj_data_ConnectionInfo
                 $username  = rawurlencode($this->Username);
                 $password  = rawurlencode($this->Password);
 
-                return "mysqlt://{$username}:{$password}@{$this->Host}/{$this->Database}";
+                return "mysqli://{$username}:{$password}@{$this->Host}/{$this->Database}";
 
             case jj_data_Connection::TYPE_MSSQL:
 

@@ -9,6 +9,90 @@
  */
 class jj_schema_MySqlProvider extends jj_schema_BaseProvider
 {
+    protected function GetTables()
+    {
+        $info    = $this->_conn->GetInfo();
+        $dr      = $this->_conn->ExecuteReader("SELECT table_name FROM information_schema.tables WHERE table_schema = '$info->Database' ORDER BY table_name");
+        $tables  = array();
+
+        while ($dr->Read())
+        {
+            $tables[] = $dr->GetValue(0);
+        }
+
+        $dr->Close();
+
+        return $tables;
+    }
+
+    protected function GetColumns($table)
+    {
+        $info     = $this->_conn->GetInfo();
+        $dr       = $this->_conn->ExecuteReader("SELECT column_name, column_default, is_nullable, data_type, coalesce(character_maximum_length, numeric_precision) AS size, numeric_scale, extra FROM information_schema.columns WHERE table_schema = '$info->Database' AND table_name = '$table' ORDER BY ordinal_position");
+        $columns  = array();
+
+        while ($dr->Read())
+        {
+            $col                        = new jj_schema_ColumnInfo();
+            $col->ColumnName            = $dr->GetValue(0);
+            $col->DataType              = $dr->GetValue(3);
+            $col->DefaultValue          = $dr->GetValue(1);
+            $col->Required              = $dr->GetValue(2) == "NO" ? true : false;
+            $col->Size                  = $dr->GetValue(4);
+            $col->Scale                 = $dr->GetValue(5);
+            $col->AutoIncrement         = $dr->GetValue(6) == "auto_increment";
+            $columns[$col->ColumnName]  = $col;
+        }
+
+        $dr->Close();
+
+        return $columns;
+    }
+
+    public function ColumnMatches(jj_schema_ColumnInfo $column, jj_orm_schema_CompilerProperty $property)
+    {
+        $colType     = $property->DataType;
+        $checkSize   = false;
+        $checkScale  = false;
+
+        switch ($property->DataType)
+        {
+            case "varchar":
+            case "nvarchar":
+
+                $colType    = "varchar";
+                $checkSize  = true;
+
+                break;
+
+            case "ntext":
+
+                $colType = "text";
+
+                break;
+
+            case "decimal":
+
+                $checkSize   = true;
+                $checkScale  = true;
+
+                break;
+
+            case "boolean":
+
+                $colType = "tinyint";
+
+                break;
+        }
+
+        if ($column->DataType != $colType || $column->DefaultValue != $property->DefaultValue || $column->Required != $property->Required || ($checkSize && $column->Size != $property->Size) || ($checkScale && $column->Scale != $property->Scale) || $column->AutoIncrement != $property->AutoIncrement)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     public function GetCreateTableSql($name, array $columns)
     {
         $sql   = "CREATE TABLE $name (";

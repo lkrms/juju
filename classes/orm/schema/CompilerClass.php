@@ -29,6 +29,10 @@ class jj_orm_schema_CompilerClass
 
     protected $IsPrepared = false;
 
+    public $FullTableName;
+
+    public $TableExists;
+
     protected $FullClassName;
 
     protected $ClassPath;
@@ -58,16 +62,26 @@ class jj_orm_schema_CompilerClass
             return;
         }
 
-        $this->FullClassName  = str_replace(".", "_", $this->ClassNamespace) . "_" . $this->ClassName;
-        $this->ClassPath      = jj_Autoload::GetClassPath($this->FullClassName, false);
-
-        if (is_null($this->ClassPath))
+        if ( ! $this->SkipPhp)
         {
-            throw new jj_Exception("Error: unable to determine path for class {$this->FullClassName} defined in schema {$this->_compiler->SchemaName}.");
+            $this->FullClassName  = str_replace(".", "_", $this->ClassNamespace) . "_" . $this->ClassName;
+            $this->ClassPath      = jj_Autoload::GetClassPath($this->FullClassName, false);
+
+            if (is_null($this->ClassPath))
+            {
+                throw new jj_Exception("Error: unable to determine path for class {$this->FullClassName} defined in schema {$this->_compiler->SchemaName}.");
+            }
+
+            $this->CompiledClassName  = "jj_orm_base_" . $this->FullClassName;
+            $this->CompiledClassPath  = jj_Autoload::GetClassPath($this->CompiledClassName, false);
         }
 
-        $this->CompiledClassName  = "jj_orm_base_" . $this->FullClassName;
-        $this->CompiledClassPath  = jj_Autoload::GetClassPath($this->CompiledClassName, false);
+        if ( ! $this->SkipSql)
+        {
+            $provider             = $this->_compiler->GetProvider();
+            $this->FullTableName  = $this->_compiler->TablePrefix . $this->TableName;
+            $this->TableExists    = $provider->HasTable($this->FullTableName);
+        }
 
         foreach ($this->Properties as $prop)
         {

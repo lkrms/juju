@@ -5,7 +5,7 @@
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2014 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
 class jj_orm_schema_Compiler
 {
@@ -15,18 +15,28 @@ class jj_orm_schema_Compiler
 
     public $BaseClass = "jj_orm_BaseObject";
 
-    public $TablePrefix;
+    public $TablePrefix = "";
 
     public $Classes = array();
+
+    /**
+     * @var jj_schema_BaseProvider
+     */
+    private $_provider;
 
     /**
      * Returns a new schema compiler instance.
      *
      * @param string $schemaFile Full path to schema file.
+     * @param jj_data_Connection $conn Connection to schema's target database.
      */
-    public function __construct($schemaFile)
+    public function __construct($schemaFile, jj_data_Connection $conn)
     {
         jj_Assert::FileExists($schemaFile, "schemaFile");
+        jj_Assert::IsNotNull($conn, "conn");
+        $this->_provider = jj_schema_BaseProvider::ByConnection($conn);
+
+        // load schema file and prepare
         $schema = file_get_contents($schemaFile);
 
         if ($schema === false)
@@ -235,26 +245,6 @@ class jj_orm_schema_Compiler
 
                         break;
 
-                    case "enum":
-
-                        if ( ! isset($column["valueSet"]) || ! is_string($column["valueSet"]) || empty($column["valueSet"]))
-                        {
-                            throw new jj_Exception("Error: invalid value for schema.tables[$i].columns[$j].valueSet in $schemaFile.");
-                        }
-
-                        $prop->ValueSet = explode(",", $column["valueSet"]);
-
-                        if (isset($column["defaultValue"]))
-                        {
-                            jj_Assert::IsString($column["defaultValue"], "schema.tables[$i].columns[$j].defaultValue in $schemaFile");
-                            jj_Assert::IsInArray($column["defaultValue"], $prop->ValueSet, "schema.tables[$i].columns[$j].defaultValue in $schemaFile");
-                            $prop->DefaultValue = $column["defaultValue"];
-                        }
-
-                        $noPrimaryKey = true;
-
-                        break;
-
                     case "boolean":
 
                         if (isset($column["defaultValue"]))
@@ -320,7 +310,7 @@ class jj_orm_schema_Compiler
                     $prop->LazyLoad = $column["lazyLoad"];
                 }
 
-                $class->Properties[$prop->FieldName] = $prop;
+                $class->Properties[$prop->ColumnName] = $prop;
                 $j++;
             }
 
@@ -337,7 +327,7 @@ class jj_orm_schema_Compiler
                 {
                     if ( ! isset($this->Classes[$prop->ObjectTypeName]))
                     {
-                        throw new jj_Exception("Error: invalid value for schema.tables[{$class->TableName}].columns[{$prop->FieldName}].objectType in $schemaFile.");
+                        throw new jj_Exception("Error: invalid value for schema.tables[{$class->TableName}].columns[{$prop->ColumnName}].objectType in $schemaFile.");
                     }
 
                     $prop->ObjectType = $this->Classes[$prop->ObjectTypeName];
@@ -378,15 +368,20 @@ class jj_orm_schema_Compiler
             }
         }
 
-        foreach ($JJ_SCHEMAS as $schemaFile)
+        foreach ($JJ_SCHEMAS as $schema)
         {
+            list ($schemaFile, $connId) = $schema;
             jj_Assert::FileExists($schemaFile, "schema file");
             $schemaFile  = realpath($schemaFile);
             $modified    = filemtime($schemaFile);
 
             if ( ! isset($state[$schemaFile]) || $modified > $state[$schemaFile])
             {
-                // TODO: actually update the database from the schema
+                // connId could be NULL, a connection ID (int) or a connection name (string)
+                $conn      = is_null($connId) ? new jj_data_Connection() : (is_int($connId) ? new jj_data_Connection(jj_data_ConnectionInfo::ById($connId)) : new jj_data_Connection(jj_data_ConnectionInfo::ByName($connId)));
+                $compiler  = new jj_orm_schema_Compiler($schemaFile, $conn);
+
+                // mark this schema as checked
                 $state[$schemaFile]  = $modified;
                 $stateChanged        = true;
             }
@@ -396,6 +391,14 @@ class jj_orm_schema_Compiler
         {
             file_put_contents($stateFile, json_encode($state));
         }
+    }
+
+    /**
+     * @return jj_schema_BaseProvider
+     */
+    public function GetProvider()
+    {
+        return $this->_provider;
     }
 }
 
