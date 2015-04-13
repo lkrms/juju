@@ -51,6 +51,12 @@ abstract class jj_Autoload
             if (file_exists($path))
             {
                 $filename = realpath($path);
+
+                if (file_exists($locationFile) && ! is_writable($locationFile) && ! @unlink($locationFile))
+                {
+                    throw new jj_Exception("Error: $locationFile is not writable.");
+                }
+
                 file_put_contents($locationFile, $filename);
             }
             else

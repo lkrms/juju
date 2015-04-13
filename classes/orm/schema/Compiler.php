@@ -360,7 +360,10 @@ class jj_orm_schema_Compiler
 
         if (file_exists($stateFile))
         {
-            jj_Assert::IsWritable($stateFile, "schema state file");
+            if ( ! is_writable($stateFile) && ! @unlink($stateFile))
+            {
+                throw new jj_Exception("Error: $stateFile is not writable.");
+            }
 
             if ( ! $forceCheck)
             {
