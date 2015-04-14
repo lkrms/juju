@@ -74,6 +74,14 @@ class jj_orm_schema_CompilerClass
 
             $this->CompiledClassName  = "orm_" . $this->FullClassName;
             $this->CompiledClassPath  = jj_Autoload::GetClassPath($this->CompiledClassName, false);
+
+            // we never overwrite non-compiled code, so if it already exists it doesn't need to be writable
+            if ( ! file_exists($this->ClassPath))
+            {
+                $this->CheckWritable($this->ClassPath);
+            }
+
+            $this->CheckWritable($this->CompiledClassPath);
         }
 
         if ( ! $this->SkipSql)
@@ -89,6 +97,26 @@ class jj_orm_schema_CompilerClass
         }
 
         $this->IsPrepared = true;
+    }
+
+    private function CheckWritable($classPath)
+    {
+        $dir = dirname($classPath);
+
+        if ( ! file_exists($dir))
+        {
+            if ( ! @mkdir($dir, 0777, true))
+            {
+                throw new jj_Exception("Error: $dir could not be created.");
+            }
+        }
+
+        jj_Assert::IsWritable($dir, "dir");
+
+        if (file_exists($classPath))
+        {
+            jj_Assert::IsWritable($classPath, "classPath");
+        }
     }
 
     /**
