@@ -72,7 +72,7 @@ class jj_orm_schema_CompilerClass
                 throw new jj_Exception("Error: unable to determine path for class {$this->FullClassName} defined in schema {$this->_compiler->SchemaName}.");
             }
 
-            $this->CompiledClassName  = "jj_orm_base_" . $this->FullClassName;
+            $this->CompiledClassName  = "orm_" . $this->FullClassName;
             $this->CompiledClassPath  = jj_Autoload::GetClassPath($this->CompiledClassName, false);
         }
 

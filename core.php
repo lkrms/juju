@@ -23,6 +23,9 @@ require_once ($JJ_CLASS_MAP["jj"] . "/Assert.php");
 require_once ($JJ_CLASS_MAP["jj"] . "/Common.php");
 require_once ($JJ_CLASS_MAP["jj"] . "/Exception.php");
 
+// ORM base classes are compiled dynamically to a writable folder
+$JJ_CLASS_MAP["orm"] = jj_Common::GetCompiledFolder() . "/orm";
+
 // load ADOdb
 require_once (JJ_ROOT . "/lib/adodb5/adodb-exceptions.inc.php");
 require_once (JJ_ROOT . "/lib/adodb5/adodb.inc.php");

@@ -11,8 +11,12 @@ abstract class jj_Common
 {
     private static $_cacheFolder;
 
+    private static $_compiledFolder;
+
     /**
      * Checks that the cache folder exists and is writable, then returns its full path.
+     *
+     * The preferred location for this folder is "APP_ROOT/.cache", but "JJ_ROOT/.cache" is used as a fallback.
      *
      * @return string The full path to the cache folder.
      */
@@ -20,12 +24,31 @@ abstract class jj_Common
     {
         if ( ! self::$_cacheFolder)
         {
-            $folder = JJ_ROOT . "/.cache";
+            $folder = defined("APP_ROOT") && file_exists(APP_ROOT . "/.cache") ? APP_ROOT . "/.cache" : JJ_ROOT . "/.cache";
             jj_Assert::IsWritable($folder, "cache folder");
             self::$_cacheFolder = $folder;
         }
 
         return self::$_cacheFolder;
+    }
+
+    /**
+     * Checks that the ".compiled" folder exists and is writable, then returns its full path.
+     *
+     * The preferred location for this folder is "APP_ROOT/.compiled", but "JJ_ROOT/.compiled" is used as a fallback. Dynamically compiled content is written to this folder.
+     *
+     * @return string The full path to the compiled folder.
+     */
+    public static function GetCompiledFolder()
+    {
+        if ( ! self::$_compiledFolder)
+        {
+            $folder = defined("APP_ROOT") && file_exists(APP_ROOT . "/.compiled") ? APP_ROOT . "/.compiled" : JJ_ROOT . "/.compiled";
+            jj_Assert::IsWritable($folder, "compiled folder");
+            self::$_compiledFolder = $folder;
+        }
+
+        return self::$_compiledFolder;
     }
 
     /**
