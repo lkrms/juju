@@ -34,6 +34,8 @@ class jj_orm_schema_CompilerProperty
      */
     public $ObjectType;
 
+    public $ObjectStorageColumns = array();
+
     public $ObjectStorageTable;
 
     protected $IsPrepared = false;

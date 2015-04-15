@@ -277,6 +277,27 @@ class jj_orm_schema_Compiler
                         jj_Assert::IsValidIdentifier($column["objectType"], "schema.tables[$i].columns[$j].objectType in $schemaFile");
                         $prop->ObjectTypeName = $column["objectType"];
 
+                        if ($column["type"] == "object")
+                        {
+                            if (isset($column["objectStorageColumns"]))
+                            {
+                                if ( ! is_array($column["objectStorageColumns"]) || empty($column["objectStorageColumns"]))
+                                {
+                                    throw new jj_Exception("Error: invalid value for schema.tables[$i].columns[$j].objectStorageColumns in $schemaFile.");
+                                }
+
+                                $k = 0;
+
+                                foreach ($column["objectStorageColumns"] as $storageColumn)
+                                {
+                                    jj_Assert::IsValidIdentifier($storageColumn, "schema.tables[$i].columns[$j].objectStorageColumns[$k] in $schemaFile");
+                                    $k++;
+                                }
+
+                                $prop->ObjectStorageColumns = $column["objectStorageColumns"];
+                            }
+                        }
+
                         break;
 
                     default:
