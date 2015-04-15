@@ -62,6 +62,8 @@ class jj_orm_schema_CompilerClass
             return;
         }
 
+        $this->FullTableName = $this->_compiler->TablePrefix . $this->TableName;
+
         if ( ! $this->SkipPhp)
         {
             $this->FullClassName  = str_replace(".", "_", $this->ClassNamespace) . "_" . $this->ClassName;
@@ -86,9 +88,8 @@ class jj_orm_schema_CompilerClass
 
         if ( ! $this->SkipSql)
         {
-            $provider             = $this->_compiler->GetProvider();
-            $this->FullTableName  = $this->_compiler->TablePrefix . $this->TableName;
-            $this->TableExists    = $provider->HasTable($this->FullTableName);
+            $provider           = $this->_compiler->GetProvider();
+            $this->TableExists  = $provider->HasTable($this->FullTableName);
         }
 
         foreach ($this->Properties as $prop)

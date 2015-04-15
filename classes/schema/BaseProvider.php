@@ -93,9 +93,10 @@ abstract class jj_schema_BaseProvider
      *
      * @param jj_schema_ColumnInfo $column Database column.
      * @param jj_orm_schema_CompilerProperty $property Schema property.
+     * @param boolean $typeOnly If TRUE, the provider should ignore everything except the data types of the column and property.
      * @return boolean TRUE if the column and property match, FALSE otherwise.
      */
-    abstract public function ColumnMatches(jj_schema_ColumnInfo $column, jj_orm_schema_CompilerProperty $property);
+    abstract public function ColumnMatches(jj_schema_ColumnInfo $column, jj_orm_schema_CompilerProperty $property, $typeOnly = false);
 
     /**
      * Returns an array of table names for every table currently in the target database.

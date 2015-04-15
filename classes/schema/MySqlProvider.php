@@ -49,7 +49,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
         return $columns;
     }
 
-    public function ColumnMatches(jj_schema_ColumnInfo $column, jj_orm_schema_CompilerProperty $property)
+    public function ColumnMatches(jj_schema_ColumnInfo $column, jj_orm_schema_CompilerProperty $property, $typeOnly = false)
     {
         $colType     = $property->DataType;
         $checkSize   = false;
@@ -85,7 +85,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
                 break;
         }
 
-        if ($column->DataType != $colType || $column->DefaultValue != $property->DefaultValue || $column->Required != $property->Required || ($checkSize && $column->Size != $property->Size) || ($checkScale && $column->Scale != $property->Scale) || $column->AutoIncrement != $property->AutoIncrement)
+        if ($column->DataType != $colType || ( ! $typeOnly && $column->DefaultValue != $property->DefaultValue) || ( ! $typeOnly && $column->Required != $property->Required) || ($checkSize && $column->Size != $property->Size) || ($checkScale && $column->Scale != $property->Scale) || ( ! $typeOnly && $column->AutoIncrement != $property->AutoIncrement))
         {
             return false;
         }

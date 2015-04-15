@@ -41,18 +41,14 @@
                     "name": "groups",
                     "type": "objectSet",
                     "objectType": "group",
+                    "objectStorageColumns":
+                    [
+                        "username",
+                        "group_id"
+                    ],
                     "objectStorageTable": "user_group"
                 }
-            ],
-            "indexes":
-            {
-                "login":
-                [
-                    "username",
-                    "password",
-                    "locked"
-                ]
-            }
+            ]
         }, {
             "name": "group",
             "namespace": "jj.security",
@@ -73,14 +69,7 @@
                     "name": "group_desc",
                     "type": "text"
                 }
-            ],
-            "uniqueIndexes":
-            {
-                "group_name":
-                [
-                    "group_name"
-                ]
-            }
+            ]
         }
     ]
 }

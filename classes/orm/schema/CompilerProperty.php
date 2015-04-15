@@ -38,7 +38,17 @@ class jj_orm_schema_CompilerProperty
 
     public $ObjectStorageTable;
 
+    public $FullObjectStorageTable;
+
     protected $IsPrepared = false;
+
+    protected $ParentColumns = array();
+
+    protected $ChildColumns = array();
+
+    public $NonExistentColumns = array();
+
+    public $NonCurrentColumns = array();
 
     public $ColumnExists;
 
@@ -69,36 +79,154 @@ class jj_orm_schema_CompilerProperty
             return;
         }
 
+        if (in_array($this->DataType, array("object", "objectSet")))
+        {
+            // we can't store a reference to anything unless it has a primary key
+            jj_Assert::IsNotEmpty($this->ObjectType->PrimaryKey, "{$this->ObjectType->TableName} primary key");
+
+            // create a copy of this array--we're going to empty it as we proceed
+            $objectStorageColumns  = $this->ObjectStorageColumns;
+            $customNames           = ! empty($objectStorageColumns);
+
+            // for objectSets, the first element/s of the array will provide custom names for "parent" key fields
+            if ($this->DataType == "objectSet")
+            {
+                foreach ($this->_class->PrimaryKey as $pkProp)
+                {
+                    if ($customNames)
+                    {
+                        $columnName = array_shift($objectStorageColumns);
+
+                        if (is_null($columnName))
+                        {
+                            throw new jj_Exception("Error: not enough information in objectStorageColumns for {$this->ColumnName} in {$this->_class->TableName}.");
+                        }
+                    }
+                    else
+                    {
+                        $columnName = "_parent_" . $this->_class->TableName . "_" . $pkProp->ColumnName;
+                    }
+
+                    $this->ParentColumns[$columnName] = $pkProp;
+                }
+
+                if ( ! $this->ObjectStorageTable)
+                {
+                    $this->ObjectStorageTable = "_ref_" . $this->_class->TableName . "_" . $this->ColumnName . "_" . $this->ObjectType->TableName;
+                }
+
+                $this->FullObjectStorageTable = $this->_compiler->TablePrefix . $this->ObjectStorageTable;
+            }
+
+            // for both objects and objectSets, remaining array elements will provide custom names for "child" key fields
+            foreach ($this->ObjectType->PrimaryKey as $pkProp)
+            {
+                if ($customNames)
+                {
+                    $columnName = array_shift($objectStorageColumns);
+
+                    if (is_null($columnName))
+                    {
+                        throw new jj_Exception("Error: not enough information in objectStorageColumns for {$this->ColumnName} in {$this->_class->TableName}.");
+                    }
+                }
+                else
+                {
+                    if ($this->DataType == "objectSet")
+                    {
+                        $columnName = "_child_" . $this->ObjectType->TableName . "_" . $pkProp->ColumnName;
+                    }
+                    else
+                    {
+                        $columnName = $this->ColumnName . "_" . $pkProp->ColumnName;
+                    }
+                }
+
+                $this->ChildColumns[$columnName] = $pkProp;
+            }
+        }
+
         if ( ! $this->_class->SkipPhp)
         {
         }
 
         if ( ! $this->_class->SkipSql)
         {
-            if ($this->_class->TableExists)
+            $provider = $this->_compiler->GetProvider();
+
+            if ($this->DataType == "objectSet")
             {
-                $provider            = $this->_compiler->GetProvider();
-                $column              = $provider->GetColumn($this->_class->FullTableName, $this->ColumnName);
-                $this->ColumnExists  = ! is_null($column);
+                $this->ColumnExists = $provider->HasTable($this->FullObjectStorageTable);
 
                 if ($this->ColumnExists)
                 {
-                    $this->ColumnIsCurrent = $provider->ColumnMatches($column, $this);
+                    $this->CheckObjectColumns($this->FullObjectStorageTable, $this->ParentColumns);
+                    $this->CheckObjectColumns($this->FullObjectStorageTable, $this->ChildColumns);
+                    $this->ColumnIsCurrent = empty($this->NonExistentColumns) && empty($this->NonCurrentColumns);
                 }
                 else
                 {
-                    $this->ColumnIsCurrent = false;
+                    $this->NonExistentColumns  = array_merge($this->ParentColumns, $this->ChildColumns);
+                    $this->ColumnIsCurrent     = false;
+                }
+            }
+            elseif ($this->_class->TableExists)
+            {
+                if ($this->DataType == "object")
+                {
+                    $this->CheckObjectColumns($this->_class->FullTableName, $this->ChildColumns);
+                }
+                else
+                {
+                    $column              = $provider->GetColumn($this->_class->FullTableName, $this->ColumnName);
+                    $this->ColumnExists  = ! is_null($column);
+
+                    if ($this->ColumnExists)
+                    {
+                        $this->ColumnIsCurrent = $provider->ColumnMatches($column, $this);
+                    }
+                    else
+                    {
+                        $this->ColumnIsCurrent = false;
+                    }
                 }
             }
             else
             {
-                $this->ColumnExists     = false;
-                $this->ColumnIsCurrent  = false;
+                $this->ColumnExists        = false;
+                $this->ColumnIsCurrent     = false;
+                $this->NonExistentColumns  = $this->ChildColumns;
             }
         }
 
         $this->IsPrepared = true;
     }
+
+    private function CheckObjectColumns($tableName, $columns)
+    {
+        $provider = $this->_compiler->GetProvider();
+
+        foreach ($columns as $columnName => $prop)
+        {
+            $column = $provider->GetColumn($tableName, $columnName);
+
+            if (is_null($column))
+            {
+                $this->NonExistentColumns[$columnName] = $prop;
+            }
+            else
+            {
+                $current = $provider->ColumnMatches($column, $prop, true);
+
+                if ( ! $current)
+                {
+                    $this->NonCurrentColumns[$columnName] = $prop;
+                }
+            }
+        }
+    }
 }
+
+// PRETTY_NESTED_ARRAYS,0
 
 ?>
