@@ -277,8 +277,6 @@ class jj_orm_schema_Compiler
                         jj_Assert::IsValidIdentifier($column["objectType"], "schema.tables[$i].columns[$j].objectType in $schemaFile");
                         $prop->ObjectTypeName = $column["objectType"];
 
-                        if ($column["type"] == "object")
-                        {
                             if (isset($column["objectStorageColumns"]))
                             {
                                 if ( ! is_array($column["objectStorageColumns"]) || empty($column["objectStorageColumns"]))
@@ -296,7 +294,6 @@ class jj_orm_schema_Compiler
 
                                 $prop->ObjectStorageColumns = $column["objectStorageColumns"];
                             }
-                        }
 
                         break;
 
