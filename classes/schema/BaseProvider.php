@@ -16,6 +16,8 @@ abstract class jj_schema_BaseProvider
 
     protected $_tables = array();
 
+    protected $_indexes = array();
+
     protected function __construct(jj_data_Connection $conn)
     {
         $this->_conn = $conn;
@@ -25,7 +27,22 @@ abstract class jj_schema_BaseProvider
 
         foreach ($tableNames as $tableName)
         {
-            $this->_tables[$tableName] = $this->GetColumns($tableName);
+            $realTableName = $tableName;
+
+            if ($this->_conn->Prefix)
+            {
+                if (substr($tableName, 0, strlen($this->_conn->Prefix)) == $this->_conn->Prefix)
+                {
+                    $tableName = substr($tableName, strlen($this->_conn->Prefix));
+                }
+                else
+                {
+                    continue;
+                }
+            }
+
+            $this->_tables[$tableName]   = $this->GetColumns($realTableName);
+            $this->_indexes[$tableName]  = $this->GetIndexes($realTableName);
         }
     }
 
@@ -70,6 +87,18 @@ abstract class jj_schema_BaseProvider
         }
     }
 
+    public function HasIndex($table, $index)
+    {
+        if ($this->HasTable($table))
+        {
+            return array_key_exists($index, $this->_indexes[$table]);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     /**
      * @return jj_schema_ColumnInfo
      */
@@ -78,6 +107,21 @@ abstract class jj_schema_BaseProvider
         if ($this->HasColumn($table, $column))
         {
             return $this->_tables[$table][$column];
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    /**
+     * @return jj_schema_IndexInfo
+     */
+    public function GetIndex($table, $index)
+    {
+        if ($this->HasIndex($table, $index))
+        {
+            return $this->_indexes[$table][$index];
         }
         else
         {
@@ -114,10 +158,18 @@ abstract class jj_schema_BaseProvider
     abstract protected function GetColumns($table);
 
     /**
+     * Returns an array of jj_schema_IndexInfo objects for every non-primary index currently in the given table of the target database.
+     *
+     * @param string $table The table name.
+     * @return array An array of jj_schema_IndexInfo objects, keyed by index name.
+     */
+    abstract protected function GetIndexes($table);
+
+    /**
      * Returns SQL to create the given table.
      *
      * @param string $name The name of the table to create.
-     * @param array $columns An array of column definition arrays, keyed by column name, with elements type, notnull, identity, primarykey, length, precision and scale.
+     * @param array $columns An array of jj_schema_ColumnInfo objects.
      * @return string SQL to create the table, e.g. a CREATE TABLE statement.
      */
     abstract public function GetCreateTableSql($name, array $columns);
@@ -126,76 +178,37 @@ abstract class jj_schema_BaseProvider
      * Returns SQL to create the given column.
      *
      * @param string $table The name of the table to add the column to.
-     * @param string $name The name of the column to add.
-     * @param array $column A column definition array, with elements type, notnull, length, precision and scale.
+     * @param jj_schema_ColumnInfo $column A jj_schema_ColumnInfo object.
      * @return string SQL to create the column, e.g. an ALTER TABLE statement.
      */
-    abstract public function GetCreateColumnSql($table, $name, array $column);
-
-    /**
-     * Returns SQL to create the given index.
-     *
-     * @param string $table The name of the table to add the index to.
-     * @param string $name The name of the index to add.
-     * @param array $index An index definition array, with elements unique and fields.
-     * @return string SQL to create the index, e.g. an ALTER TABLE statement.
-     */
-    abstract public function GetCreateIndexSql($table, $name, array $index);
-
-    /**
-     * Returns SQL to create the given reference.
-     *
-     * @param string $table The name of the table to add the reference to.
-     * @param string $name The name of the reference to add.
-     * @param array $reference A reference definition array, with elements fields, reftable, reffields, ondelete and onupdate (restrict, cascade or setnull).
-     * @return string SQL to create the reference, e.g. an ALTER TABLE statement.
-     */
-    abstract public function GetCreateReferenceSql($table, $name, array $reference);
-
-    /**
-     * Returns SQL to drop the given table.
-     *
-     * @param string $table The name of the table to drop.
-     * @return string SQL to drop the table, e.g. a DROP TABLE statement.
-     */
-    abstract public function GetDropTableSql($table);
-
-    /**
-     * Returns SQL to drop the given column.
-     *
-     * @param string $table The name of the table to which the column belongs.
-     * @param string $name The name of the column to drop.
-     * @return string SQL to drop the column, e.g. an ALTER TABLE statement.
-     */
-    abstract public function GetDropColumnSql($table, $name);
-
-    /**
-     * Returns SQL to drop the given index.
-     *
-     * @param string $table The name of the table to which the index belongs.
-     * @param string $name The name of the index to drop.
-     * @return string SQL to drop the index, e.g. an ALTER TABLE statement.
-     */
-    abstract public function GetDropIndexSql($table, $name);
-
-    /**
-     * Returns SQL to drop the given reference.
-     *
-     * @param string $table The name of the table to which the reference belongs.
-     * @param string $name The name of the reference to drop.
-     * @return string SQL to drop the reference, e.g. an ALTER TABLE statement.
-     */
-    abstract public function GetDropReferenceSql($table, $name);
+    abstract public function GetCreateColumnSql($table, jj_schema_ColumnInfo $column);
 
     /**
      * Returns SQL to alter an existing column.
      *
      * @param string $table The name of the table to which the column belongs.
-     * @param string $name The name of the column to alter.
-     * @param array $column A column definition array, with elements type, notnull, length, precision and scale.
+     * @param jj_schema_ColumnInfo $column A jj_schema_ColumnInfo object.
      * @return string SQL to alter the column, e.g. an ALTER TABLE statement.
      */
-    abstract public function GetAlterColumnSql($table, $name, array $column);
+    abstract public function GetAlterColumnSql($table, jj_schema_ColumnInfo $column);
+
+    /**
+     * Returns SQL to create the given index.
+     *
+     * @param string $table The name of the table to add the index to.
+     * @param jj_schema_IndexInfo $index A jj_schema_IndexInfo object.
+     * @return string SQL to create the index, e.g. an ALTER TABLE statement.
+     */
+    abstract public function GetCreateIndexSql($table, jj_schema_IndexInfo $index);
+
+    /**
+     * Returns SQL to drop (delete) the given index.
+     *
+     * @param string $table The name of the table with the index to drop.
+     * @param string $indexName The name of the index to drop.
+     * @return string SQL to drop the index, e.g. an ALTER TABLE statement.
+     */
+    abstract public function GetDropIndexSql($table, $indexName);
 }
 
 ?>

@@ -22,6 +22,8 @@ class jj_schema_ColumnInfo
     public $Scale;
 
     public $AutoIncrement;
+
+    public $PrimaryKey;
 }
 
 ?>

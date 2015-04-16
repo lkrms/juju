@@ -5,7 +5,7 @@
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2014 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
 class jj_orm_schema_CompilerClass
 {
@@ -26,6 +26,8 @@ class jj_orm_schema_CompilerClass
     public $Properties = array();
 
     public $PrimaryKey = array();
+
+    public $Indexes = array();
 
     protected $IsPrepared = false;
 
@@ -97,6 +99,11 @@ class jj_orm_schema_CompilerClass
             $prop->Prepare();
         }
 
+        foreach ($this->Indexes as $ind)
+        {
+            $ind->Prepare();
+        }
+
         $this->IsPrepared = true;
     }
 
@@ -126,6 +133,55 @@ class jj_orm_schema_CompilerClass
     public function GetCompiler()
     {
         return $this->_compiler;
+    }
+
+    public function GetSql()
+    {
+        $sql = array();
+
+        if ( ! $this->SkipSql)
+        {
+            $provider  = $this->_compiler->GetProvider();
+            $extraSql  = array();
+
+            if ( ! $this->TableExists)
+            {
+                $columns = array();
+
+                foreach ($this->Properties as $prop)
+                {
+                    $columns   = array_merge($columns, $prop->GetNewColumns());
+                    $extraSql  = array_merge($extraSql, $prop->GetObjectSetSql());
+                }
+
+                $sql[] = $provider->GetCreateTableSql($this->FullTableName, $columns);
+            }
+            else
+            {
+                foreach ($this->Properties as $prop)
+                {
+                    $columns = $prop->GetChangedColumns();
+
+                    foreach ($columns as $column)
+                    {
+                        $sql[] = $provider->GetAlterColumnSql($this->FullTableName, $column);
+                    }
+
+                    $columns = $prop->GetNewColumns();
+
+                    foreach ($columns as $column)
+                    {
+                        $sql[] = $provider->GetCreateColumnSql($this->FullTableName, $column);
+                    }
+
+                    $extraSql = array_merge($extraSql, $prop->GetObjectSetSql());
+                }
+            }
+
+            $sql = array_merge($sql, $extraSql);
+        }
+
+        return $sql;
     }
 }
 

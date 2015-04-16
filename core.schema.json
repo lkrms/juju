@@ -48,6 +48,18 @@
                     ],
                     "objectStorageTable": "user_group"
                 }
+            ],
+            "indexes":
+            [
+                {
+                    "name": "login",
+                    "columns":
+                    [
+                        "username",
+                        "password",
+                        "locked"
+                    ]
+                }
             ]
         }, {
             "name": "group",
@@ -68,6 +80,17 @@
                 }, {
                     "name": "group_desc",
                     "type": "text"
+                }
+            ],
+            "indexes":
+            [
+                {
+                    "name": "group_name",
+                    "columns":
+                    [
+                        "group_name"
+                    ],
+                    "unique": true
                 }
             ]
         }

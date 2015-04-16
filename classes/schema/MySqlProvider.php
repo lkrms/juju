@@ -28,7 +28,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
     protected function GetColumns($table)
     {
         $info     = $this->_conn->GetInfo();
-        $dr       = $this->_conn->ExecuteReader("SELECT column_name, column_default, is_nullable, data_type, coalesce(character_maximum_length, numeric_precision) AS size, numeric_scale, extra FROM information_schema.columns WHERE table_schema = '$info->Database' AND table_name = '$table' ORDER BY ordinal_position");
+        $dr       = $this->_conn->ExecuteReader("SELECT column_name, column_default, is_nullable, data_type, coalesce(character_maximum_length, numeric_precision) AS size, numeric_scale, extra, column_key FROM information_schema.columns WHERE table_schema = '$info->Database' AND table_name = '$table' ORDER BY ordinal_position");
         $columns  = array();
 
         while ($dr->Read())
@@ -41,12 +41,39 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
             $col->Size                  = $dr->GetValue(4);
             $col->Scale                 = $dr->GetValue(5);
             $col->AutoIncrement         = $dr->GetValue(6) == "auto_increment";
+            $col->PrimaryKey            = $dr->GetValue(7) == "PRI";
             $columns[$col->ColumnName]  = $col;
         }
 
         $dr->Close();
 
         return $columns;
+    }
+
+    protected function GetIndexes($table)
+    {
+        $info     = $this->_conn->GetInfo();
+        $dr       = $this->_conn->ExecuteReader("SELECT non_unique, index_name, column_name FROM information_schema.statistics WHERE table_schema = '$info->Database' AND table_name = '$table' AND index_name <> 'PRIMARY' ORDER BY index_name, seq_in_index");
+        $indexes  = array();
+
+        while ($dr->Read())
+        {
+            $indexName = $dr->GetValue(1);
+
+            if ( ! array_key_exists($indexName, $indexes))
+            {
+                $ind                  = new jj_schema_IndexInfo();
+                $ind->IndexName       = $indexName;
+                $ind->Unique          = $dr->GetValue(0) == 0 ? true : false;
+                $indexes[$indexName]  = $ind;
+            }
+
+            $indexes[$indexName]->Columns[] = $dr->GetValue(2);
+        }
+
+        $dr->Close();
+
+        return $indexes;
     }
 
     public function ColumnMatches(jj_schema_ColumnInfo $column, jj_orm_schema_CompilerProperty $property, $typeOnly = false)
@@ -95,13 +122,14 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
 
     public function GetCreateTableSql($name, array $columns)
     {
+        $name  = $this->_conn->Prefix . $name;
         $sql   = "CREATE TABLE $name (";
         $pk    = array();
         $cols  = array();
 
-        foreach ($columns as $colName => $col)
+        foreach ($columns as $column)
         {
-            $colType = $col["type"];
+            $colType = $column->DataType;
 
             switch ($colType)
             {
@@ -109,7 +137,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
                 case "nvarchar":
 
                     // no such thing as nvarchar in mysql
-                    $colType = "varchar($col[length])";
+                    $colType = "varchar({$column->Size})";
 
                     break;
 
@@ -122,26 +150,44 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
 
                 case "decimal":
 
-                    $colType = "decimal($col[precision],$col[scale])";
+                    $colType = "decimal({$column->Size},{$column->Scale})";
+
+                    break;
+
+                case "boolean":
+
+                    $colType = "tinyint";
 
                     break;
             }
 
-            $colSql = "$colName $colType";
+            $colSql = "{$column->ColumnName} $colType";
 
-            if ($col["notnull"])
+            if ($column->Required)
             {
                 $colSql .= " NOT NULL";
             }
 
-            if ($col["identity"])
+            if (isset($column->DefaultValue))
+            {
+                $default = "'{$column->DefaultValue}'";
+
+                if (is_bool($column->DefaultValue))
+                {
+                    $default = $column->DefaultValue ? "'1'" : "'0'";
+                }
+
+                $colSql .= " DEFAULT $default";
+            }
+
+            if ($column->AutoIncrement)
             {
                 $colSql .= " AUTO_INCREMENT";
             }
 
-            if ($col["primarykey"])
+            if ($column->PrimaryKey)
             {
-                $pk[] = $colName;
+                $pk[] = $column->ColumnName;
             }
 
             $cols[] = $colSql;
@@ -159,10 +205,9 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
         return $sql;
     }
 
-    private static function GetColumnSql( array $column)
+    private static function GetColumnSql(jj_schema_ColumnInfo $column)
     {
-        $sql      = "";
-        $colType  = $column["type"];
+        $colType = $column->DataType;
 
         switch ($colType)
         {
@@ -170,7 +215,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
             case "nvarchar":
 
                 // no such thing as nvarchar in mysql
-                $colType = "varchar($column[length])";
+                $colType = "varchar({$column->Size})";
 
                 break;
 
@@ -183,133 +228,87 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
 
             case "decimal":
 
-                $colType = "decimal($column[precision],$column[scale])";
+                $colType = "decimal({$column->Size},{$column->Scale})";
+
+                break;
+
+            case "boolean":
+
+                $colType = "tinyint";
 
                 break;
         }
 
-        $sql .= $colType;
+        $sql = $colType;
 
-        if ($column["notnull"])
+        if ($column->Required)
         {
             $sql .= " NOT NULL";
+        }
+
+        if (isset($column->DefaultValue))
+        {
+            $default = "'{$column->DefaultValue}'";
+
+            if (is_bool($column->DefaultValue))
+            {
+                $default = $column->DefaultValue ? "'1'" : "'0'";
+            }
+
+            $sql .= " DEFAULT $default";
         }
 
         return $sql;
     }
 
-    public function GetCreateColumnSql($table, $name, array $column)
+    public function GetCreateColumnSql($table, jj_schema_ColumnInfo $column)
     {
-        $sql  = "ALTER TABLE $table ADD COLUMN $name ";
+        $table = $this->_conn->Prefix . $table;
+
+        if ($column->PrimaryKey)
+        {
+            throw new jj_Exception("Error: primary key columns can't be added after table creation.");
+        }
+
+        $sql  = "ALTER TABLE $table ADD COLUMN {$column->ColumnName} ";
         $sql .= self::GetColumnSql($column);
 
         return $sql;
     }
 
-    public function GetCreateIndexSql($table, $name, array $index)
+    public function GetCreateIndexSql($table, jj_schema_IndexInfo $index)
     {
-        $sql = "ALTER TABLE $table ADD ";
+        $table  = $this->_conn->Prefix . $table;
+        $sql    = "ALTER TABLE $table ADD ";
 
-        if ($index["unique"])
+        if ($index->Unique)
         {
             $sql .= "UNIQUE ";
         }
 
-        $sql .= "INDEX $name (" . implode(", ", $index["fields"]) . ")";
+        $sql .= "INDEX {$index->IndexName} (" . implode(", ", $index->Columns) . ")";
 
         return $sql;
     }
 
-    private static function GetReferenceOption($name, $value)
+    public function GetDropIndexSql($table, $indexName)
     {
-        $sql = "";
+        $table  = $this->_conn->Prefix . $table;
+        $sql    = "ALTER TABLE $table DROP INDEX $indexName";
 
-        if ($value)
+        return $sql;
+    }
+
+    public function GetAlterColumnSql($table, jj_schema_ColumnInfo $column)
+    {
+        $table = $this->_conn->Prefix . $table;
+
+        if ($column->PrimaryKey)
         {
-            switch ($name)
-            {
-                case "ondelete":
-
-                    $sql .= " ON DELETE ";
-
-                    break;
-
-                case "onupdate":
-
-                    $sql .= " ON UPDATE ";
-
-                    break;
-            }
-
-            switch ($value)
-            {
-                case "restrict":
-
-                    $sql .= "RESTRICT";
-
-                    break;
-
-                case "cascade":
-
-                    $sql .= "CASCADE";
-
-                    break;
-
-                case "setnull":
-
-                    $sql .= "SET NULL";
-
-                    break;
-            }
+            throw new jj_Exception("Error: primary key columns can't be altered after table creation.");
         }
 
-        return $sql;
-    }
-
-    public function GetCreateReferenceSql($table, $name, array $reference)
-    {
-        $sql  = "ALTER TABLE $table ADD CONSTRAINT $name FOREIGN KEY (";
-        $sql .= implode(", ", $reference["fields"]);
-        $sql .= ") REFERENCES $reference[reftable] (";
-        $sql .= implode(", ", $reference["reffields"]);
-        $sql .= ")";
-        $sql .= self::GetReferenceOption("ondelete", $reference["ondelete"]);
-        $sql .= self::GetReferenceOption("onupdate", $reference["onupdate"]);
-
-        return $sql;
-    }
-
-    public function GetDropTableSql($table)
-    {
-        $sql = "DROP TABLE $table";
-
-        return $sql;
-    }
-
-    public function GetDropColumnSql($table, $name)
-    {
-        $sql = "ALTER TABLE $table DROP COLUMN $name";
-
-        return $sql;
-    }
-
-    public function GetDropIndexSql($table, $name)
-    {
-        $sql = "ALTER TABLE $table DROP INDEX $name";
-
-        return $sql;
-    }
-
-    public function GetDropReferenceSql($table, $name)
-    {
-        $sql = "ALTER TABLE $table DROP FOREIGN KEY $name";
-
-        return $sql;
-    }
-
-    public function GetAlterColumnSql($table, $name, array $column)
-    {
-        $sql  = "ALTER TABLE $table CHANGE COLUMN $name $name ";
+        $sql  = "ALTER TABLE $table CHANGE COLUMN {$column->ColumnName} {$column->ColumnName} ";
         $sql .= self::GetColumnSql($column);
 
         return $sql;

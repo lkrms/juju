@@ -277,23 +277,23 @@ class jj_orm_schema_Compiler
                         jj_Assert::IsValidIdentifier($column["objectType"], "schema.tables[$i].columns[$j].objectType in $schemaFile");
                         $prop->ObjectTypeName = $column["objectType"];
 
-                            if (isset($column["objectStorageColumns"]))
+                        if (isset($column["objectStorageColumns"]))
+                        {
+                            if ( ! is_array($column["objectStorageColumns"]) || empty($column["objectStorageColumns"]))
                             {
-                                if ( ! is_array($column["objectStorageColumns"]) || empty($column["objectStorageColumns"]))
-                                {
-                                    throw new jj_Exception("Error: invalid value for schema.tables[$i].columns[$j].objectStorageColumns in $schemaFile.");
-                                }
-
-                                $k = 0;
-
-                                foreach ($column["objectStorageColumns"] as $storageColumn)
-                                {
-                                    jj_Assert::IsValidIdentifier($storageColumn, "schema.tables[$i].columns[$j].objectStorageColumns[$k] in $schemaFile");
-                                    $k++;
-                                }
-
-                                $prop->ObjectStorageColumns = $column["objectStorageColumns"];
+                                throw new jj_Exception("Error: invalid value for schema.tables[$i].columns[$j].objectStorageColumns in $schemaFile.");
                             }
+
+                            $k = 0;
+
+                            foreach ($column["objectStorageColumns"] as $storageColumn)
+                            {
+                                jj_Assert::IsValidIdentifier($storageColumn, "schema.tables[$i].columns[$j].objectStorageColumns[$k] in $schemaFile");
+                                $k++;
+                            }
+
+                            $prop->ObjectStorageColumns = $column["objectStorageColumns"];
+                        }
 
                         break;
 
@@ -332,6 +332,51 @@ class jj_orm_schema_Compiler
                 $j++;
             }
 
+            if (isset($table["indexes"]))
+            {
+                if ( ! is_array($table["indexes"]) || empty($table["indexes"]))
+                {
+                    throw new jj_Exception("Error: invalid value for schema.tables[$i].indexes in $schemaFile.");
+                }
+
+                $j = 0;
+
+                foreach ($table["indexes"] as $index)
+                {
+                    if ( ! isset($index["name"]) || ! is_string($index["name"]) || empty($index["name"]))
+                    {
+                        throw new jj_Exception("Error: invalid value for schema.tables[$i].indexes[$j].name in $schemaFile.");
+                    }
+
+                    if ( ! isset($index["columns"]) || ! is_array($index["columns"]) || empty($index["columns"]))
+                    {
+                        throw new jj_Exception("Error: invalid value for schema.tables[$i].indexes[$j].columns in $schemaFile.");
+                    }
+
+                    jj_Assert::IsValidIdentifier($index["name"], "schema.tables[$i].indexes[$j].name in $schemaFile");
+                    $ind = new jj_orm_schema_CompilerIndex($class, $index["name"]);
+
+                    foreach ($index["columns"] as $column)
+                    {
+                        if ( ! array_key_exists($column, $class->Properties))
+                        {
+                            throw new jj_Exception("Error: undefined column in schema.tables[$i].indexes[$j].columns in $schemaFile.");
+                        }
+
+                        $ind->Columns[] = $class->Properties[$column];
+                    }
+
+                    if (isset($index["unique"]))
+                    {
+                        jj_Assert::IsBoolean($index["unique"], "schema.tables[$i].indexes[$j].unique in $schemaFile");
+                        $ind->Unique = $index["unique"];
+                    }
+
+                    $class->Indexes[$ind->IndexName] = $ind;
+                    $j++;
+                }
+            }
+
             $this->Classes[$class->TableName] = $class;
             $i++;
         }
@@ -358,6 +403,18 @@ class jj_orm_schema_Compiler
         {
             $class->Prepare();
         }
+    }
+
+    public function GetSql()
+    {
+        $sql = array();
+
+        foreach ($this->Classes as $class)
+        {
+            $sql = array_merge($sql, $class->GetSql());
+        }
+
+        return $sql;
     }
 
     /**
@@ -401,6 +458,12 @@ class jj_orm_schema_Compiler
                 // connId could be NULL, a connection ID (int) or a connection name (string)
                 $conn      = is_null($connId) ? new jj_data_Connection() : (is_int($connId) ? new jj_data_Connection(jj_data_ConnectionInfo::ById($connId)) : new jj_data_Connection(jj_data_ConnectionInfo::ByName($connId)));
                 $compiler  = new jj_orm_schema_Compiler($schemaFile, $conn);
+                $sql       = $compiler->GetSql();
+
+                foreach ($sql as $query)
+                {
+                    $conn->ExecuteNonQuery($query);
+                }
 
                 // mark this schema as checked
                 $state[$schemaFile]  = $modified;

@@ -5,7 +5,7 @@
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2014 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
 class jj_orm_schema_CompilerProperty
 {
@@ -175,6 +175,8 @@ class jj_orm_schema_CompilerProperty
                 if ($this->DataType == "object")
                 {
                     $this->CheckObjectColumns($this->_class->FullTableName, $this->ChildColumns);
+                    $this->ColumnExists     = empty($this->NonExistentColumns);
+                    $this->ColumnIsCurrent  = empty($this->NonCurrentColumns);
                 }
                 else
                 {
@@ -224,6 +226,119 @@ class jj_orm_schema_CompilerProperty
                 }
             }
         }
+    }
+
+    private function GetColumnInfo()
+    {
+        $col                 = new jj_schema_ColumnInfo();
+        $col->ColumnName     = $this->ColumnName;
+        $col->DataType       = $this->DataType;
+        $col->DefaultValue   = $this->DefaultValue;
+        $col->Required       = $this->Required;
+        $col->Size           = $this->Size;
+        $col->Scale          = $this->Scale;
+        $col->AutoIncrement  = $this->AutoIncrement;
+        $col->PrimaryKey     = in_array($this, $this->_class->PrimaryKey);
+
+        return $col;
+    }
+
+    public function GetNewColumns()
+    {
+        $cols = array();
+
+        if ($this->DataType != "objectSet")
+        {
+            if ($this->DataType == "object")
+            {
+                foreach ($this->NonExistentColumns as $columnName => $prop)
+                {
+                    $col                 = $prop->GetColumnInfo();
+                    $col->ColumnName     = $columnName;
+                    $col->AutoIncrement  = false;
+                    $col->PrimaryKey     = in_array($this, $this->_class->PrimaryKey);
+                    $cols[]              = $col;
+                }
+            }
+            elseif ( ! $this->ColumnExists)
+            {
+                $cols[] = $this->GetColumnInfo();
+            }
+        }
+
+        return $cols;
+    }
+
+    public function GetChangedColumns()
+    {
+        $cols = array();
+
+        if ($this->DataType != "objectSet")
+        {
+            if ($this->DataType == "object")
+            {
+                foreach ($this->NonCurrentColumns as $columnName => $prop)
+                {
+                    $col                 = $prop->GetColumnInfo();
+                    $col->ColumnName     = $columnName;
+                    $col->AutoIncrement  = false;
+                    $col->PrimaryKey     = in_array($this, $this->_class->PrimaryKey);
+                    $cols[]              = $col;
+                }
+            }
+            elseif ($this->ColumnExists && ! $this->ColumnIsCurrent)
+            {
+                $cols[] = $this->GetColumnInfo();
+            }
+        }
+
+        return $cols;
+    }
+
+    public function GetObjectSetSql()
+    {
+        $sql = array();
+
+        if ($this->DataType == "objectSet")
+        {
+            $provider = $this->_compiler->GetProvider();
+
+            // i.e. if the reference table exists
+            if ( ! $this->ColumnExists)
+            {
+                $columns = array();
+
+                foreach ($this->NonExistentColumns as $columnName => $prop)
+                {
+                    $col                 = $prop->GetColumnInfo();
+                    $col->ColumnName     = $columnName;
+                    $col->AutoIncrement  = false;
+                    $columns[]           = $col;
+                }
+
+                $sql[] = $provider->GetCreateTableSql($this->FullObjectStorageTable, $columns);
+            }
+            else
+            {
+                foreach ($this->NonCurrentColumns as $columnName => $prop)
+                {
+                    $col                 = $prop->GetColumnInfo();
+                    $col->ColumnName     = $columnName;
+                    $col->AutoIncrement  = false;
+                    $sql[]               = $provider->GetAlterColumnSql($this->FullObjectStorageTable, $col);
+                }
+
+                foreach ($this->NonExistentColumns as $columnName => $prop)
+                {
+                    $col                 = $prop->GetColumnInfo();
+                    $col->ColumnName     = $columnName;
+                    $col->AutoIncrement  = false;
+                    $sql[]               = $provider->GetCreateColumnSql($this->FullObjectStorageTable, $col);
+                }
+            }
+        }
+
+        return $sql;
     }
 }
 
