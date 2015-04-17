@@ -46,6 +46,8 @@ class jj_orm_schema_CompilerProperty
 
     protected $ChildColumns = array();
 
+    protected $ObjectSetIndexes = array();
+
     public $NonExistentColumns = array();
 
     public $NonCurrentColumns = array();
@@ -91,6 +93,9 @@ class jj_orm_schema_CompilerProperty
             // for objectSets, the first element/s of the array will provide custom names for "parent" key fields
             if ($this->DataType == "objectSet")
             {
+                $ind = new jj_orm_schema_CompilerIndex($this->_class, "_idx_parent_" . $this->_class->TableName . "_" . $this->ColumnName);
+                $this->ObjectSetIndexes[] = $ind;
+
                 foreach ($this->_class->PrimaryKey as $pkProp)
                 {
                     if ($customNames)
@@ -107,7 +112,8 @@ class jj_orm_schema_CompilerProperty
                         $columnName = "_parent_" . $this->_class->TableName . "_" . $pkProp->ColumnName;
                     }
 
-                    $this->ParentColumns[$columnName] = $pkProp;
+                    $this->ParentColumns[$columnName]  = $pkProp;
+                    $ind->Columns[]                    = $columnName;
                 }
 
                 if ( ! $this->ObjectStorageTable)
@@ -115,10 +121,14 @@ class jj_orm_schema_CompilerProperty
                     $this->ObjectStorageTable = "_ref_" . $this->_class->TableName . "_" . $this->ColumnName . "_" . $this->ObjectType->TableName;
                 }
 
-                $this->FullObjectStorageTable = $this->_compiler->TablePrefix . $this->ObjectStorageTable;
+                $this->FullObjectStorageTable  = $this->_compiler->TablePrefix . $this->ObjectStorageTable;
+                $ind->TableName                = $this->FullObjectStorageTable;
+                $ind->Prepare();
             }
 
             // for both objects and objectSets, remaining array elements will provide custom names for "child" key fields
+            $ind = new jj_orm_schema_CompilerIndex($this->_class, "_idx_" . ($this->DataType == "objectSet" ? "child_" : "") . $this->_class->TableName . "_" . $this->ColumnName);
+
             foreach ($this->ObjectType->PrimaryKey as $pkProp)
             {
                 if ($customNames)
@@ -142,7 +152,19 @@ class jj_orm_schema_CompilerProperty
                     }
                 }
 
-                $this->ChildColumns[$columnName] = $pkProp;
+                $this->ChildColumns[$columnName]  = $pkProp;
+                $ind->Columns[]                   = $columnName;
+            }
+
+            if ($this->DataType == "objectSet")
+            {
+                $this->ObjectSetIndexes[]  = $ind;
+                $ind->TableName            = $this->FullObjectStorageTable;
+                $ind->Prepare();
+            }
+            else
+            {
+                $this->_class->Indexes[$ind->IndexName] = $ind;
             }
         }
 
@@ -218,7 +240,7 @@ class jj_orm_schema_CompilerProperty
             }
             else
             {
-                $current = $provider->ColumnMatches($column, $prop, true);
+                $current = $provider->ColumnMatches($column, $prop, true) && ($this->DataType != "object" || $column->Required == $this->Required);
 
                 if ( ! $current)
                 {
@@ -255,6 +277,7 @@ class jj_orm_schema_CompilerProperty
                 {
                     $col                 = $prop->GetColumnInfo();
                     $col->ColumnName     = $columnName;
+                    $col->Required       = $this->Required;
                     $col->AutoIncrement  = false;
                     $col->PrimaryKey     = in_array($this, $this->_class->PrimaryKey);
                     $cols[]              = $col;
@@ -281,6 +304,7 @@ class jj_orm_schema_CompilerProperty
                 {
                     $col                 = $prop->GetColumnInfo();
                     $col->ColumnName     = $columnName;
+                    $col->Required       = $this->Required;
                     $col->AutoIncrement  = false;
                     $col->PrimaryKey     = in_array($this, $this->_class->PrimaryKey);
                     $cols[]              = $col;
@@ -334,6 +358,19 @@ class jj_orm_schema_CompilerProperty
                     $col->ColumnName     = $columnName;
                     $col->AutoIncrement  = false;
                     $sql[]               = $provider->GetCreateColumnSql($this->FullObjectStorageTable, $col);
+                }
+            }
+
+            foreach ($this->ObjectSetIndexes as $ind)
+            {
+                if ($ind->IndexExists && ! $ind->IndexIsCurrent)
+                {
+                    $sql[] = $provider->GetDropIndexSql($this->FullObjectStorageTable, $ind->IndexName);
+                }
+
+                if ( ! $ind->IndexExists || ! $ind->IndexIsCurrent)
+                {
+                    $sql[] = $provider->GetCreateIndexSql($this->FullObjectStorageTable, $ind->GetIndexInfo());
                 }
             }
         }

@@ -178,6 +178,19 @@ class jj_orm_schema_CompilerClass
                 }
             }
 
+            foreach ($this->Indexes as $ind)
+            {
+                if ($ind->IndexExists && ! $ind->IndexIsCurrent)
+                {
+                    $sql[] = $provider->GetDropIndexSql($this->FullTableName, $ind->IndexName);
+                }
+
+                if ( ! $ind->IndexExists || ! $ind->IndexIsCurrent)
+                {
+                    $sql[] = $provider->GetCreateIndexSql($this->FullTableName, $ind->GetIndexInfo());
+                }
+            }
+
             $sql = array_merge($sql, $extraSql);
         }
 

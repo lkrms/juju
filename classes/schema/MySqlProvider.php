@@ -120,6 +120,24 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
         return true;
     }
 
+    public function IndexMatches(jj_schema_IndexInfo $index, jj_orm_schema_CompilerIndex $compilerIndex)
+    {
+        // get an array of column names from $compilerIndex
+        $cols = array();
+
+        foreach ($compilerIndex->Columns as $prop)
+        {
+            $cols[] = is_string($prop) ? $prop : $prop->ColumnName;
+        }
+
+        if ($index->Unique != $compilerIndex->Unique || $index->Columns != $cols)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     public function GetCreateTableSql($name, array $columns)
     {
         $name  = $this->_conn->Prefix . $name;
@@ -267,7 +285,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
 
         if ($column->PrimaryKey)
         {
-            throw new jj_Exception("Error: primary key columns can't be added after table creation.");
+            throw new jj_Exception("Error: primary key columns ({$table}.{$column->ColumnName}) can't be added after table creation.");
         }
 
         $sql  = "ALTER TABLE $table ADD COLUMN {$column->ColumnName} ";
@@ -305,7 +323,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
 
         if ($column->PrimaryKey)
         {
-            throw new jj_Exception("Error: primary key columns can't be altered after table creation.");
+            throw new jj_Exception("Error: primary key columns ({$table}.{$column->ColumnName}) can't be altered after table creation.");
         }
 
         $sql  = "ALTER TABLE $table CHANGE COLUMN {$column->ColumnName} {$column->ColumnName} ";

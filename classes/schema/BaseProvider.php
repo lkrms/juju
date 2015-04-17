@@ -143,6 +143,15 @@ abstract class jj_schema_BaseProvider
     abstract public function ColumnMatches(jj_schema_ColumnInfo $column, jj_orm_schema_CompilerProperty $property, $typeOnly = false);
 
     /**
+     * Returns TRUE if the database index described in $index matches the schema index in $compilerIndex.
+     *
+     * @param jj_schema_IndexInfo $index Database index.
+     * @param jj_orm_schema_CompilerIndex $compilerIndex Schema index.
+     * @return boolean TRUE if the indexes match, FALSE otherwise.
+     */
+    abstract public function IndexMatches(jj_schema_IndexInfo $index, jj_orm_schema_CompilerIndex $compilerIndex);
+
+    /**
      * Returns an array of table names for every table currently in the target database.
      *
      * @return array An array of table names.

@@ -358,7 +358,7 @@ class jj_orm_schema_Compiler
 
                     foreach ($index["columns"] as $column)
                     {
-                        if ( ! array_key_exists($column, $class->Properties))
+                        if ( ! array_key_exists($column, $class->Properties) || in_array($class->Properties[$column]->DataType, array("object", "objectSet")))
                         {
                             throw new jj_Exception("Error: undefined column in schema.tables[$i].indexes[$j].columns in $schemaFile.");
                         }
