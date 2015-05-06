@@ -67,18 +67,19 @@
             "columns":
             [
                 {
-                    "name": "group_id",
+                    "name": "id",
                     "type": "bigint",
                     "primaryKey": true,
                     "required": true,
                     "autoIncrement": true
                 }, {
-                    "name": "group_name",
+                    "name": "name",
                     "type": "varchar",
                     "size": 50,
                     "required": true
                 }, {
-                    "name": "group_desc",
+                    "name": "desc",
+                    "phpName": "Description",
                     "type": "text"
                 }
             ],
@@ -88,7 +89,7 @@
                     "name": "group_name",
                     "columns":
                     [
-                        "group_name"
+                        "name"
                     ],
                     "unique": true
                 }

@@ -265,6 +265,28 @@ class jj_orm_schema_CompilerProperty
         return $col;
     }
 
+    public function GetColumnNames()
+    {
+        $cols = array();
+
+        if ($this->DataType != "objectSet")
+        {
+            if ($this->DataType == "object")
+            {
+                foreach ($this->ChildColumns as $columnName => $prop)
+                {
+                    $cols[] = $columnName;
+                }
+            }
+            else
+            {
+                $cols[] = $this->ColumnName;
+            }
+        }
+
+        return $cols;
+    }
+
     public function GetNewColumns()
     {
         $cols = array();

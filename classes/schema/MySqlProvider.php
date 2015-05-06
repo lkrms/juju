@@ -123,12 +123,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
     public function IndexMatches(jj_schema_IndexInfo $index, jj_orm_schema_CompilerIndex $compilerIndex)
     {
         // get an array of column names from $compilerIndex
-        $cols = array();
-
-        foreach ($compilerIndex->Columns as $prop)
-        {
-            $cols[] = is_string($prop) ? $prop : $prop->ColumnName;
-        }
+        $cols = $compilerIndex->GetColumnNames();
 
         if ($index->Unique != $compilerIndex->Unique || $index->Columns != $cols)
         {
@@ -141,7 +136,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
     public function GetCreateTableSql($name, array $columns)
     {
         $name  = $this->_conn->Prefix . $name;
-        $sql   = "CREATE TABLE $name (";
+        $sql   = "CREATE TABLE `$name` (";
         $pk    = array();
         $cols  = array();
 
@@ -179,7 +174,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
                     break;
             }
 
-            $colSql = "{$column->ColumnName} $colType";
+            $colSql = "`{$column->ColumnName}` $colType";
 
             if ($column->Required)
             {
@@ -205,7 +200,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
 
             if ($column->PrimaryKey)
             {
-                $pk[] = $column->ColumnName;
+                $pk[] = "`{$column->ColumnName}`";
             }
 
             $cols[] = $colSql;
@@ -288,7 +283,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
             throw new jj_Exception("Error: primary key columns ({$table}.{$column->ColumnName}) can't be added after table creation.");
         }
 
-        $sql  = "ALTER TABLE $table ADD COLUMN {$column->ColumnName} ";
+        $sql  = "ALTER TABLE `$table` ADD COLUMN `{$column->ColumnName}` ";
         $sql .= self::GetColumnSql($column);
 
         return $sql;
@@ -297,14 +292,14 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
     public function GetCreateIndexSql($table, jj_schema_IndexInfo $index)
     {
         $table  = $this->_conn->Prefix . $table;
-        $sql    = "ALTER TABLE $table ADD ";
+        $sql    = "ALTER TABLE `$table` ADD ";
 
         if ($index->Unique)
         {
             $sql .= "UNIQUE ";
         }
 
-        $sql .= "INDEX {$index->IndexName} (" . implode(", ", $index->Columns) . ")";
+        $sql .= "INDEX `{$index->IndexName}` (`" . implode("`, `", $index->Columns) . "`)";
 
         return $sql;
     }
@@ -312,7 +307,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
     public function GetDropIndexSql($table, $indexName)
     {
         $table  = $this->_conn->Prefix . $table;
-        $sql    = "ALTER TABLE $table DROP INDEX $indexName";
+        $sql    = "ALTER TABLE `$table` DROP INDEX `$indexName`";
 
         return $sql;
     }
@@ -326,7 +321,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
             throw new jj_Exception("Error: primary key columns ({$table}.{$column->ColumnName}) can't be altered after table creation.");
         }
 
-        $sql  = "ALTER TABLE $table CHANGE COLUMN {$column->ColumnName} {$column->ColumnName} ";
+        $sql  = "ALTER TABLE `$table` CHANGE COLUMN `{$column->ColumnName}` `{$column->ColumnName}` ";
         $sql .= self::GetColumnSql($column);
 
         return $sql;

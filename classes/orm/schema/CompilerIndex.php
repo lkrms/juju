@@ -77,20 +77,31 @@ class jj_orm_schema_CompilerIndex
 
     public function GetIndexInfo()
     {
-        // we need an array of column names, not CompilerProperty objects
+        $ind             = new jj_schema_IndexInfo();
+        $ind->IndexName  = $this->IndexName;
+        $ind->Unique     = $this->Unique;
+        $ind->Columns    = $this->GetColumnNames();
+
+        return $ind;
+    }
+
+    public function GetColumnNames()
+    {
         $cols = array();
 
         foreach ($this->Columns as $prop)
         {
-            $cols[] = is_string($prop) ? $prop : $prop->ColumnName;
+            if (is_string($prop))
+            {
+                $cols[] = $prop;
+            }
+            else
+            {
+                $cols = array_merge($cols, $prop->GetColumnNames());
+            }
         }
 
-        $ind             = new jj_schema_IndexInfo();
-        $ind->IndexName  = $this->IndexName;
-        $ind->Unique     = $this->Unique;
-        $ind->Columns    = $cols;
-
-        return $ind;
+        return $cols;
     }
 }
 
