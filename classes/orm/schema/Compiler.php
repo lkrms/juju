@@ -24,6 +24,8 @@ class jj_orm_schema_Compiler
      */
     private $_provider;
 
+    private static $_schemas = array();
+
     /**
      * Returns a new schema compiler instance.
      *
@@ -274,7 +276,7 @@ class jj_orm_schema_Compiler
                             throw new jj_Exception("Error: invalid value for schema.tables[$i].columns[$j].objectType in $schemaFile.");
                         }
 
-                        jj_Assert::IsValidIdentifier($column["objectType"], "schema.tables[$i].columns[$j].objectType in $schemaFile");
+                        jj_Assert::IsValidIdentifier($column["objectType"], "schema.tables[$i].columns[$j].objectType in $schemaFile", array("."));
                         $prop->ObjectTypeName = $column["objectType"];
 
                         if (isset($column["objectStorageColumns"]))
@@ -388,6 +390,21 @@ class jj_orm_schema_Compiler
             {
                 if (isset($prop->ObjectTypeName))
                 {
+                    // references to classes in previously defined schemas are accepted
+                    if (($offset = strrpos($prop->ObjectTypeName, ".")) !== false)
+                    {
+                        $schemaName      = substr($prop->ObjectTypeName, 0, $offset);
+                        $objectTypeName  = substr($prop->ObjectTypeName, $offset + 1);
+
+                        if ( ! isset(self::$_schemas[$conn->Id][$schemaName]->Classes[$objectTypeName]))
+                        {
+                            throw new jj_Exception("Error: invalid value for schema.tables[{$class->TableName}].columns[{$prop->ColumnName}].objectType in $schemaFile.");
+                        }
+
+                        $prop->ObjectType = self::$_schemas[$conn->Id][$schemaName]->Classes[$objectTypeName];
+                    }
+                    else
+                    {
                     if ( ! isset($this->Classes[$prop->ObjectTypeName]))
                     {
                         throw new jj_Exception("Error: invalid value for schema.tables[{$class->TableName}].columns[{$prop->ColumnName}].objectType in $schemaFile.");
@@ -397,12 +414,20 @@ class jj_orm_schema_Compiler
                 }
             }
         }
+        }
 
         // give each class an opportunity to prepare itself for output
         foreach ($this->Classes as $class)
         {
             $class->Prepare();
         }
+
+        if ( ! isset(self::$_schemas[$conn->Id]))
+        {
+            self::$_schemas[$conn->Id] = array();
+        }
+
+        self::$_schemas[$conn->Id][$this->SchemaName] = $this;
     }
 
     public function GetSql()
@@ -455,6 +480,14 @@ class jj_orm_schema_Compiler
 
             if ( ! isset($state[$schemaFile]) || $modified > $state[$schemaFile])
             {
+                // if we need to check one schema, we check them all
+                if ( ! $forceCheck)
+                {
+                    self::CheckAllSchemas(true);
+
+                    return;
+                }
+
                 // connId could be NULL, a connection ID (int) or a connection name (string)
                 $conn      = is_null($connId) ? new jj_data_Connection() : (is_int($connId) ? new jj_data_Connection(jj_data_ConnectionInfo::ById($connId)) : new jj_data_Connection(jj_data_ConnectionInfo::ByName($connId)));
                 $compiler  = new jj_orm_schema_Compiler($schemaFile, $conn);
