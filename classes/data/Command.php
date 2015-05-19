@@ -75,8 +75,8 @@ class jj_data_Command
             }
             elseif (is_object($param) || is_array($param))
             {
-                // unserialized objects and arrays get JSON'ized
-                $param = json_encode($param);
+                // unserialized objects and arrays get YAML'ified
+                $param = yaml_emit($param);
             }
 
             $this->_preparedParams[$paramName] = $param;

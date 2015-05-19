@@ -46,11 +46,23 @@ class jj_orm_schema_Compiler
             throw new jj_Exception("Error: unable to read $schemaFile.");
         }
 
+        if (strtolower(pathinfo($schemaFile, PATHINFO_EXTENSION)) == "json")
+        {
         $json = json_decode($schema, true);
 
         if (json_last_error() != JSON_ERROR_NONE)
         {
             throw new jj_Exception("Error: invalid JSON in $schemaFile.");
+        }
+        }
+        else
+        {
+            $json = yaml_parse($schema);
+
+            if ($json === false)
+            {
+                throw new jj_Exception("Error: invalid YAML in $schemaFile.");
+            }
         }
 
         if ( ! isset($json["name"]) || ! is_string($json["name"]) || empty($json["name"]))
@@ -467,7 +479,7 @@ class jj_orm_schema_Compiler
 
             if ( ! $forceCheck)
             {
-                $state = json_decode(file_get_contents($stateFile), true);
+                $state = yaml_parse(file_get_contents($stateFile));
             }
         }
 
@@ -506,7 +518,7 @@ class jj_orm_schema_Compiler
 
         if ($stateChanged)
         {
-            file_put_contents($stateFile, json_encode($state));
+            file_put_contents($stateFile, yaml_emit($state));
         }
     }
 
