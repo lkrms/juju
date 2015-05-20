@@ -1,13 +1,15 @@
 <?php
 
+namespace jj\orm;
+
 /**
  * Base class for ORM objects.
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2013 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-abstract class jj_orm_BaseObject
+abstract class BaseObject
 {
     protected $_isNew = true;
 

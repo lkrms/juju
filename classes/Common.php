@@ -1,5 +1,7 @@
 <?php
 
+namespace jj;
+
 /**
  * Provides various helper methods that don't belong anywhere else.
  *
@@ -7,7 +9,7 @@
  * @author Luke Arms <luke@arms.to>
  * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-abstract class jj_Common
+abstract class Common
 {
     private static $_cacheFolder;
 
@@ -25,7 +27,7 @@ abstract class jj_Common
         if ( ! self::$_cacheFolder)
         {
             $folder = defined("APP_ROOT") && file_exists(APP_ROOT . "/.cache") ? APP_ROOT . "/.cache" : JJ_ROOT . "/.cache";
-            jj_Assert::IsWritable($folder, "cache folder");
+            Assert::IsWritable($folder, "cache folder");
             self::$_cacheFolder = $folder;
         }
 
@@ -44,7 +46,7 @@ abstract class jj_Common
         if ( ! self::$_compiledFolder)
         {
             $folder = defined("APP_ROOT") && file_exists(APP_ROOT . "/.compiled") ? APP_ROOT . "/.compiled" : JJ_ROOT . "/.compiled";
-            jj_Assert::IsWritable($folder, "compiled folder");
+            Assert::IsWritable($folder, "compiled folder");
             self::$_compiledFolder = $folder;
         }
 
@@ -81,7 +83,7 @@ abstract class jj_Common
      */
     public static function ArrayMatchSplice($pattern, array & $array)
     {
-        jj_Assert::IsString($pattern, "pattern");
+        Assert::IsString($pattern, "pattern");
         $found = false;
 
         foreach ($array as $key => $value)
@@ -113,7 +115,7 @@ abstract class jj_Common
      */
     public static function ArrayKeySplice($key, array & $array)
     {
-        jj_Assert::IsString($key, "key");
+        Assert::IsString($key, "key");
         $value = null;
 
         if (array_key_exists($key, $array))
@@ -151,10 +153,10 @@ abstract class jj_Common
      * See also _getTable in the global context.
      *
      * @param string $table Base table name.
-     * @param jj_data_Connection $conn Database connection.
+     * @param data\Connection $conn Database connection.
      * @return string Full table name.
      */
-    public static function GetTableName($table, jj_data_Connection $conn = null)
+    public static function GetTableName($table, data\Connection $conn = null)
     {
         if (is_null($conn))
         {
@@ -167,70 +169,13 @@ abstract class jj_Common
     }
 
     /**
-     * Converts the given value (Y, N or NULL) to its boolean equivalent.
-     *
-     * @param string $val The value to convert.
-     * @param boolean $default The value to return if $val is NULL or invalid.
-     * @return boolean
-     */
-    public static function YesNoToBoolean($val, $default = false)
-    {
-        if (is_null($val))
-        {
-            return $default;
-        }
-        else
-        {
-            jj_Assert::IsString($val, "val");
-        }
-
-        if ( ! strcasecmp($val, "Y"))
-        {
-            return true;
-        }
-
-        if ( ! strcasecmp($val, "N"))
-        {
-            return false;
-        }
-
-        return $default;
-    }
-
-    /**
-     * Converts the given boolean to its Y, N or NULL equivalent. If $val and $default are a match, NULL is returned.
-     *
-     * @param boolean $val The value to convert.
-     * @param boolean $default The meaning of NULL.
-     * @return string
-     */
-    public static function BooleanToYesNo($val, $default = false)
-    {
-        if (is_null($val))
-        {
-            return null;
-        }
-        else
-        {
-            jj_Assert::IsBoolean($val, "val");
-        }
-
-        if ($val == $default)
-        {
-            return null;
-        }
-
-        return $val ? "Y" : "N";
-    }
-
-    /**
      * Parses tokens in the given string.
      *
      * @param string $val The string with tokens to parse, e.g. "SELECT * FROM #TABLE:_users#"
-     * @param jj_data_Connection $conn The relevant database connection, if applicable.
+     * @param data\Connection $conn The relevant database connection, if applicable.
      * @return string The parsed string.
      */
-    public static function ParseTokens($val, jj_data_Connection $conn = null)
+    public static function ParseTokens($val, data\Connection $conn = null)
     {
         $matches = array();
         preg_match_all("/#([_a-zA-Z0-9]+):(.*?)#/", $val, $matches, PREG_SET_ORDER);
@@ -243,13 +188,13 @@ abstract class jj_Common
             {
                 case "TABLE":
 
-                    $replace = _getTable($matches[$i][2], $conn);
+                    $replace = self::GetTableName($matches[$i][2], $conn);
 
                     break;
 
                 default:
 
-                    throw new jj_Exception("Error: {$matches[$i][1]} is not a valid token type.", jj_Exception::CODE_GENERAL_ERROR);
+                    throw new Exception("Error: {$matches[$i][1]} is not a valid token type.", Exception::CODE_GENERAL_ERROR);
             }
 
             $val = str_replace($matches[$i][0], $replace, $val);
@@ -266,9 +211,9 @@ abstract class jj_Common
      */
     public static function GetCamelCase($val, $delimiter = "_")
     {
-        jj_Assert::IsString($val, "val");
-        jj_Assert::IsString($delimiter, "delimiter");
-        jj_Assert::IsNotEmpty($delimiter, "delimiter");
+        Assert::IsString($val, "val");
+        Assert::IsString($delimiter, "delimiter");
+        Assert::IsNotEmpty($delimiter, "delimiter");
 
         // split
         $words = explode($delimiter, $val);

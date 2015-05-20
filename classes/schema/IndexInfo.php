@@ -1,5 +1,7 @@
 <?php
 
+namespace jj\schema;
+
 /**
  * Stores information about indexes in database tables.
  *
@@ -7,7 +9,7 @@
  * @author Luke Arms <luke@arms.to>
  * @copyright Copyright (c) 2015 Luke Arms
  */
-class jj_schema_IndexInfo
+class IndexInfo
 {
     public $IndexName;
 

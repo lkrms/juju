@@ -1,5 +1,7 @@
 <?php
 
+namespace jj\orm\schema;
+
 /**
  * Internal use only.
  *
@@ -7,7 +9,7 @@
  * @author Luke Arms <luke@arms.to>
  * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-class jj_orm_schema_CompilerClass
+class CompilerClass
 {
     public $TableName;
 
@@ -44,15 +46,15 @@ class jj_orm_schema_CompilerClass
     protected $CompiledClassPath;
 
     /**
-     * @var jj_orm_schema_Compiler
+     * @var Compiler
      */
     private $_compiler;
 
-    public function __construct(jj_orm_schema_Compiler $compiler, $tableName)
+    public function __construct(Compiler $compiler, $tableName)
     {
         $this->_compiler       = $compiler;
         $this->TableName       = $tableName;
-        $this->ClassName       = jj_Common::GetCamelCase($tableName);
+        $this->ClassName       = \jj\Common::GetCamelCase($tableName);
         $this->ClassNamespace  = $compiler->SchemaNamespace;
         $this->BaseClass       = $compiler->BaseClass;
     }
@@ -68,16 +70,16 @@ class jj_orm_schema_CompilerClass
 
         if ( ! $this->SkipPhp)
         {
-            $this->FullClassName  = str_replace(".", "_", $this->ClassNamespace) . "_" . $this->ClassName;
-            $this->ClassPath      = jj_Autoload::GetClassPath($this->FullClassName, false);
+            $this->FullClassName  = $this->ClassNamespace . "\\" . $this->ClassName;
+            $this->ClassPath      = \jj\Autoload::GetClassPath($this->FullClassName, false);
 
             if (is_null($this->ClassPath))
             {
-                throw new jj_Exception("Error: unable to determine path for class {$this->FullClassName} defined in schema {$this->_compiler->SchemaName}.");
+                throw new \jj\Exception("Error: unable to determine path for class {$this->FullClassName} defined in schema {$this->_compiler->SchemaName}.");
             }
 
-            $this->CompiledClassName  = "orm_" . $this->FullClassName;
-            $this->CompiledClassPath  = jj_Autoload::GetClassPath($this->CompiledClassName, false);
+            $this->CompiledClassName  = $this->FullClassName . "_entity";
+            $this->CompiledClassPath  = \jj\Autoload::GetClassPath($this->CompiledClassName, false);
 
             // we never overwrite non-compiled code, so if it already exists it doesn't need to be writable
             if ( ! file_exists($this->ClassPath))
@@ -115,20 +117,20 @@ class jj_orm_schema_CompilerClass
         {
             if ( ! @mkdir($dir, 0777, true))
             {
-                throw new jj_Exception("Error: $dir could not be created.");
+                throw new \jj\Exception("Error: $dir could not be created.");
             }
         }
 
-        jj_Assert::IsWritable($dir, "dir");
+        \jj\Assert::IsWritable($dir, "dir");
 
         if (file_exists($classPath))
         {
-            jj_Assert::IsWritable($classPath, "classPath");
+            \jj\Assert::IsWritable($classPath, "classPath");
         }
     }
 
     /**
-     * @return jj_orm_schema_Compiler
+     * @return Compiler
      */
     public function GetCompiler()
     {

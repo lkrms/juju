@@ -1,6 +1,8 @@
 <?php
 
-class jj_security_User
+namespace jj\security;
+
+class User
 {
     public static function GetCurrentUsername()
     {

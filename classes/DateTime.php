@@ -1,13 +1,15 @@
 <?php
 
+namespace jj;
+
 /**
  * Represents an instant in time.
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2013 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-class jj_DateTime implements jj_data_IFormat
+class DateTime implements data\IFormat
 {
     private $_ts;
 
@@ -19,7 +21,7 @@ class jj_DateTime implements jj_data_IFormat
         }
         else
         {
-            jj_Assert::IsNumeric($timestamp, "timestamp");
+            Assert::IsNumeric($timestamp, "timestamp");
         }
 
         $this->_ts = 0 + $timestamp;
@@ -96,7 +98,7 @@ class jj_DateTime implements jj_data_IFormat
         return date($formatString, $this->_ts);
     }
 
-    public function DataFormat(jj_data_Connection $conn)
+    public function DataFormat(data\Connection $conn)
     {
         // datetime formatting is connection-specific
         return $conn->FormatDateTime($this->_ts);

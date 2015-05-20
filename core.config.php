@@ -9,12 +9,12 @@
  */
 
 // app developers shouldn't need to make any changes here
-if ( ! isset($GLOBALS["JJ_CLASS_MAP"]))
+if ( ! isset($GLOBALS["JJ_NAMESPACES"]))
 {
-    $JJ_CLASS_MAP = array();
+    $JJ_NAMESPACES = array();
 }
 
-$JJ_CLASS_MAP["jj"] = JJ_ROOT . "/classes";
+$JJ_NAMESPACES["jj"] = JJ_ROOT . "/classes";
 
 if ( ! isset($GLOBALS["JJ_SCHEMAS"]))
 {

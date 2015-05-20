@@ -1,17 +1,19 @@
 <?php
 
+namespace jj\data;
+
 /**
  * Provides a mechanism for reading rows of data from a database.
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2013 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-class jj_data_Reader
+class Reader
 {
     /**
      *
-     * @var jj_data_Command
+     * @var Command
      */
     public $Command;
 
@@ -23,7 +25,7 @@ class jj_data_Reader
 
     /**
      *
-     * @var ADORecordSet
+     * @var \ADORecordSet
      */
     private $_rs;
 
@@ -40,9 +42,9 @@ class jj_data_Reader
     private $_fields;
 
     /**
-     * Internal use only. See {@link jj_data_Command::ExecuteReader() Command->ExecuteReader}.
+     * Internal use only. See {@link Command::ExecuteReader() Command->ExecuteReader}.
      */
-    public function __construct(jj_data_Command $cmd)
+    public function __construct(Command $cmd)
     {
         $this->Command     = $cmd;
         $this->_rs         = $cmd->_getRs();
@@ -54,7 +56,7 @@ class jj_data_Reader
             $fieldInfo                              = $this->_rs->FetchField($i);
             $this->_fieldNames[]                    = $fieldInfo->name;
             $this->_fieldIndexes[$fieldInfo->name]  = $i;
-            $transform = jj_data_Command::_getFieldTransform($this->_rs, $fieldInfo);
+            $transform = Command::_getFieldTransform($this->_rs, $fieldInfo);
 
             if ($transform)
             {
@@ -67,7 +69,7 @@ class jj_data_Reader
     {
         if ($this->IsClosed)
         {
-            throw new jj_Exception("Error: Reader object is closed.", jj_Exception::CODE_GENERAL_ERROR);
+            throw new \jj\Exception("Error: Reader object is closed.", \jj\Exception::CODE_GENERAL_ERROR);
         }
     }
 
@@ -75,7 +77,7 @@ class jj_data_Reader
     {
         if ( ! $this->_dataAvailable)
         {
-            throw new jj_Exception("Error: no more data.", jj_Exception::CODE_GENERAL_ERROR);
+            throw new \jj\Exception("Error: no more data.", \jj\Exception::CODE_GENERAL_ERROR);
         }
     }
 
@@ -83,7 +85,7 @@ class jj_data_Reader
     {
         if ( ! is_int($index) || $index < 0 or $index > $this->FieldCount - 1)
         {
-            throw new jj_Exception("Error: column index out of range.", jj_Exception::CODE_GENERAL_ERROR);
+            throw new \jj\Exception("Error: column index out of range.", \jj\Exception::CODE_GENERAL_ERROR);
         }
     }
 
@@ -91,7 +93,7 @@ class jj_data_Reader
     {
         foreach ($this->_fieldTransforms as $i => $transform)
         {
-            $fields[$i] = jj_data_Command::_doFieldTransform($this->_rs, $fields[$i], $transform);
+            $fields[$i] = Command::_doFieldTransform($this->_rs, $fields[$i], $transform);
         }
 
         return $fields;
@@ -192,7 +194,7 @@ class jj_data_Reader
 
         if ( ! isset($this->_fieldIndexes[$name]))
         {
-            throw new jj_Exception("Error: invalid column name.", jj_Exception::CODE_GENERAL_ERROR);
+            throw new \jj\Exception("Error: invalid column name.", \jj\Exception::CODE_GENERAL_ERROR);
         }
 
         return $this->_fieldIndexes[$name];

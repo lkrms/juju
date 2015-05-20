@@ -1,13 +1,15 @@
 <?php
 
+namespace jj\schema;
+
 /**
  * Schema provider for MySQL databases.
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2013 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-class jj_schema_MySqlProvider extends jj_schema_BaseProvider
+class MySqlProvider extends BaseProvider
 {
     protected function GetTables()
     {
@@ -33,7 +35,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
 
         while ($dr->Read())
         {
-            $col                        = new jj_schema_ColumnInfo();
+            $col                        = new ColumnInfo();
             $col->ColumnName            = $dr->GetValue(0);
             $col->DataType              = $dr->GetValue(3);
             $col->DefaultValue          = $dr->GetValue(1);
@@ -62,7 +64,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
 
             if ( ! array_key_exists($indexName, $indexes))
             {
-                $ind                  = new jj_schema_IndexInfo();
+                $ind                  = new IndexInfo();
                 $ind->IndexName       = $indexName;
                 $ind->Unique          = $dr->GetValue(0) == 0 ? true : false;
                 $indexes[$indexName]  = $ind;
@@ -76,7 +78,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
         return $indexes;
     }
 
-    public function ColumnMatches(jj_schema_ColumnInfo $column, jj_orm_schema_CompilerProperty $property, $typeOnly = false)
+    public function ColumnMatches(ColumnInfo $column, \jj\orm\schema\CompilerProperty $property, $typeOnly = false)
     {
         $colType     = $property->DataType;
         $checkSize   = false;
@@ -120,7 +122,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
         return true;
     }
 
-    public function IndexMatches(jj_schema_IndexInfo $index, jj_orm_schema_CompilerIndex $compilerIndex)
+    public function IndexMatches(IndexInfo $index, \jj\orm\schema\CompilerIndex $compilerIndex)
     {
         // get an array of column names from $compilerIndex
         $cols = $compilerIndex->GetColumnNames();
@@ -218,7 +220,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
         return $sql;
     }
 
-    private static function GetColumnSql(jj_schema_ColumnInfo $column)
+    private static function GetColumnSql(ColumnInfo $column)
     {
         $colType = $column->DataType;
 
@@ -274,13 +276,13 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
         return $sql;
     }
 
-    public function GetCreateColumnSql($table, jj_schema_ColumnInfo $column)
+    public function GetCreateColumnSql($table, ColumnInfo $column)
     {
         $table = $this->_conn->Prefix . $table;
 
         if ($column->PrimaryKey)
         {
-            throw new jj_Exception("Error: primary key columns ({$table}.{$column->ColumnName}) can't be added after table creation.");
+            throw new \jj\Exception("Error: primary key columns ({$table}.{$column->ColumnName}) can't be added after table creation.");
         }
 
         $sql  = "ALTER TABLE `$table` ADD COLUMN `{$column->ColumnName}` ";
@@ -289,7 +291,7 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
         return $sql;
     }
 
-    public function GetCreateIndexSql($table, jj_schema_IndexInfo $index)
+    public function GetCreateIndexSql($table, IndexInfo $index)
     {
         $table  = $this->_conn->Prefix . $table;
         $sql    = "ALTER TABLE `$table` ADD ";
@@ -312,13 +314,13 @@ class jj_schema_MySqlProvider extends jj_schema_BaseProvider
         return $sql;
     }
 
-    public function GetAlterColumnSql($table, jj_schema_ColumnInfo $column)
+    public function GetAlterColumnSql($table, ColumnInfo $column)
     {
         $table = $this->_conn->Prefix . $table;
 
         if ($column->PrimaryKey)
         {
-            throw new jj_Exception("Error: primary key columns ({$table}.{$column->ColumnName}) can't be altered after table creation.");
+            throw new \jj\Exception("Error: primary key columns ({$table}.{$column->ColumnName}) can't be altered after table creation.");
         }
 
         $sql  = "ALTER TABLE `$table` CHANGE COLUMN `{$column->ColumnName}` `{$column->ColumnName}` ";

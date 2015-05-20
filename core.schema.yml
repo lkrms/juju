@@ -4,7 +4,7 @@ namespace: jj
 tablePrefix: core_
 tables:
 - name: user
-  namespace: jj.security
+  namespace: jj\security
   columns:
   - name: username
     type: varchar
@@ -42,7 +42,7 @@ tables:
     - password
     - locked
 - name: group
-  namespace: jj.security
+  namespace: jj\security
   columns:
   - name: id
     type: bigint

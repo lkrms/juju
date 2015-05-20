@@ -1,5 +1,7 @@
 <?php
 
+namespace jj\schema;
+
 /**
  * Base class for schema providers.
  *
@@ -7,10 +9,10 @@
  * @author Luke Arms <luke@arms.to>
  * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-abstract class jj_schema_BaseProvider
+abstract class BaseProvider
 {
     /**
-     * @var jj_data_Connection
+     * @var \jj\data\Connection
      */
     protected $_conn;
 
@@ -18,7 +20,7 @@ abstract class jj_schema_BaseProvider
 
     protected $_indexes = array();
 
-    protected function __construct(jj_data_Connection $conn)
+    protected function __construct(\jj\data\Connection $conn)
     {
         $this->_conn = $conn;
 
@@ -49,24 +51,24 @@ abstract class jj_schema_BaseProvider
     /**
      * Returns a schema provider instance for the given database connection.
      *
-     * @param jj_data_Connection $conn Connection to the target database.
-     * @return jj_schema_BaseProvider New schema provider instance.
+     * @param \jj\data\Connection $conn Connection to the target database.
+     * @return BaseProvider New schema provider instance.
      */
-    public static function ByConnection(jj_data_Connection $conn)
+    public static function ByConnection(\jj\data\Connection $conn)
     {
-        jj_Assert::IsNotNull($conn, "conn");
+        \jj\Assert::IsNotNull($conn, "conn");
 
         switch ($conn->Type)
         {
-            case jj_data_Connection::TYPE_MYSQL:
+            case \jj\data\Connection::TYPE_MYSQL :
 
-                return new jj_schema_MySqlProvider($conn);
+                return new MySqlProvider($conn);
 
                 break;
 
             default:
 
-                throw new jj_Exception("Connection type $conn->Type isn't supported for schema management.");
+                throw new \jj\Exception("Connection type $conn->Type isn't supported for schema management.");
         }
     }
 
@@ -100,7 +102,7 @@ abstract class jj_schema_BaseProvider
     }
 
     /**
-     * @return jj_schema_ColumnInfo
+     * @return ColumnInfo
      */
     public function GetColumn($table, $column)
     {
@@ -115,7 +117,7 @@ abstract class jj_schema_BaseProvider
     }
 
     /**
-     * @return jj_schema_IndexInfo
+     * @return IndexInfo
      */
     public function GetIndex($table, $index)
     {
@@ -135,21 +137,21 @@ abstract class jj_schema_BaseProvider
      * The comparison needs to be handled by the provider because some databases only support a subset of schema features,
      * which could lead to unnecessary mismatches being identified by the base provider, forcing expensive database changes.
      *
-     * @param jj_schema_ColumnInfo $column Database column.
-     * @param jj_orm_schema_CompilerProperty $property Schema property.
+     * @param ColumnInfo $column Database column.
+     * @param \jj\orm\schema\CompilerProperty $property Schema property.
      * @param boolean $typeOnly If TRUE, the provider should ignore everything except the data types of the column and property.
      * @return boolean TRUE if the column and property match, FALSE otherwise.
      */
-    abstract public function ColumnMatches(jj_schema_ColumnInfo $column, jj_orm_schema_CompilerProperty $property, $typeOnly = false);
+    abstract public function ColumnMatches(ColumnInfo $column, \jj\orm\schema\CompilerProperty $property, $typeOnly = false);
 
     /**
      * Returns TRUE if the database index described in $index matches the schema index in $compilerIndex.
      *
-     * @param jj_schema_IndexInfo $index Database index.
-     * @param jj_orm_schema_CompilerIndex $compilerIndex Schema index.
+     * @param IndexInfo $index Database index.
+     * @param \jj\orm\schema\CompilerIndex $compilerIndex Schema index.
      * @return boolean TRUE if the indexes match, FALSE otherwise.
      */
-    abstract public function IndexMatches(jj_schema_IndexInfo $index, jj_orm_schema_CompilerIndex $compilerIndex);
+    abstract public function IndexMatches(IndexInfo $index, \jj\orm\schema\CompilerIndex $compilerIndex);
 
     /**
      * Returns an array of table names for every table currently in the target database.
@@ -159,18 +161,18 @@ abstract class jj_schema_BaseProvider
     abstract protected function GetTables();
 
     /**
-     * Returns an array of jj_schema_ColumnInfo objects for every column currently in the given table of the target database.
+     * Returns an array of ColumnInfo objects for every column currently in the given table of the target database.
      *
      * @param string $table The table name.
-     * @return array An array of jj_schema_ColumnInfo objects, keyed by column name.
+     * @return array An array of ColumnInfo objects, keyed by column name.
      */
     abstract protected function GetColumns($table);
 
     /**
-     * Returns an array of jj_schema_IndexInfo objects for every non-primary index currently in the given table of the target database.
+     * Returns an array of IndexInfo objects for every non-primary index currently in the given table of the target database.
      *
      * @param string $table The table name.
-     * @return array An array of jj_schema_IndexInfo objects, keyed by index name.
+     * @return array An array of IndexInfo objects, keyed by index name.
      */
     abstract protected function GetIndexes($table);
 
@@ -178,7 +180,7 @@ abstract class jj_schema_BaseProvider
      * Returns SQL to create the given table.
      *
      * @param string $name The name of the table to create.
-     * @param array $columns An array of jj_schema_ColumnInfo objects.
+     * @param array $columns An array of ColumnInfo objects.
      * @return string SQL to create the table, e.g. a CREATE TABLE statement.
      */
     abstract public function GetCreateTableSql($name, array $columns);
@@ -187,28 +189,28 @@ abstract class jj_schema_BaseProvider
      * Returns SQL to create the given column.
      *
      * @param string $table The name of the table to add the column to.
-     * @param jj_schema_ColumnInfo $column A jj_schema_ColumnInfo object.
+     * @param ColumnInfo $column A ColumnInfo object.
      * @return string SQL to create the column, e.g. an ALTER TABLE statement.
      */
-    abstract public function GetCreateColumnSql($table, jj_schema_ColumnInfo $column);
+    abstract public function GetCreateColumnSql($table, ColumnInfo $column);
 
     /**
      * Returns SQL to alter an existing column.
      *
      * @param string $table The name of the table to which the column belongs.
-     * @param jj_schema_ColumnInfo $column A jj_schema_ColumnInfo object.
+     * @param ColumnInfo $column A ColumnInfo object.
      * @return string SQL to alter the column, e.g. an ALTER TABLE statement.
      */
-    abstract public function GetAlterColumnSql($table, jj_schema_ColumnInfo $column);
+    abstract public function GetAlterColumnSql($table, ColumnInfo $column);
 
     /**
      * Returns SQL to create the given index.
      *
      * @param string $table The name of the table to add the index to.
-     * @param jj_schema_IndexInfo $index A jj_schema_IndexInfo object.
+     * @param IndexInfo $index A IndexInfo object.
      * @return string SQL to create the index, e.g. an ALTER TABLE statement.
      */
-    abstract public function GetCreateIndexSql($table, jj_schema_IndexInfo $index);
+    abstract public function GetCreateIndexSql($table, IndexInfo $index);
 
     /**
      * Returns SQL to drop (delete) the given index.

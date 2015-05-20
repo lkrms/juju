@@ -1,13 +1,15 @@
 <?php
 
+namespace jj\data;
+
 /**
  * Represents a SQL transaction.
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2013 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-class jj_data_Transaction
+class Transaction
 {
     /**
      * Fastest, but dirty reads are possible.
@@ -32,7 +34,7 @@ class jj_data_Transaction
     /**
      * The database connection associated with the transaction.
      *
-     * @var jj_data_Connection
+     * @var Connection
      */
     public $Connection;
 
@@ -52,16 +54,16 @@ class jj_data_Transaction
 
     /**
      *
-     * @var ADOConnection
+     * @var \ADOConnection
      */
     private $_conn;
 
     /**
-     * Internal use only. See {@link jj_data_Connection::BeginTransaction() Connection->BeginTransaction}.
+     * Internal use only. See {@link Connection::BeginTransaction() Connection->BeginTransaction}.
      */
-    public function __construct(jj_data_Connection $conn, $isolationLevel)
+    public function __construct(Connection $conn, $isolationLevel)
     {
-        jj_Assert::IsNotNull($conn, "conn");
+        \jj\Assert::IsNotNull($conn, "conn");
         self::AssertIsValidIsolationLevel($isolationLevel, "isolationLevel");
         $this->Connection      = $conn;
         $this->IsolationLevel  = $isolationLevel;
@@ -70,7 +72,7 @@ class jj_data_Transaction
 
         if ( ! $this->_conn->BeginTrans())
         {
-            throw new jj_Exception("Error: transactions are not supported by this database.", jj_Exception::CODE_GENERAL_ERROR);
+            throw new \jj\Exception("Error: transactions are not supported by this database.", \jj\Exception::CODE_GENERAL_ERROR);
         }
     }
 
@@ -116,11 +118,11 @@ class jj_data_Transaction
      */
     public static function AssertIsValidIsolationLevel($val, $name)
     {
-        jj_Assert::IsInteger($val, $name);
+        \jj\Assert::IsInteger($val, $name);
 
         if ( ! in_array($val, array(self::ISOLATION_LEVEL_READ_UNCOMMITTED, self::ISOLATION_LEVEL_READ_COMMITTED, self::ISOLATION_LEVEL_REPEATABLE_READ, self::ISOLATION_LEVEL_SERIALIZABLE)))
         {
-            throw new jj_Exception("Error: $name is not a valid isolation level.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new \jj\Exception("Error: $name is not a valid isolation level.", \jj\Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -131,21 +133,21 @@ class jj_data_Transaction
     {
         if ($this->IsComplete)
         {
-            throw new jj_Exception("Error: transaction is complete.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new \jj\Exception("Error: transaction is complete.", \jj\Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
     /**
      * Internal use only.
      */
-    public function CheckCommand(jj_data_Command $command)
+    public function CheckCommand(Command $command)
     {
-        jj_Assert::IsNotNull($command, "command");
+        \jj\Assert::IsNotNull($command, "command");
         $this->AssertIsNotComplete();
 
         if ($command->Connection !== $this->Connection)
         {
-            throw new jj_Exception("Error: transaction is not associated with the command's connection.", jj_Exception::CODE_GENERAL_ERROR);
+            throw new \jj\Exception("Error: transaction is not associated with the command's connection.", \jj\Exception::CODE_GENERAL_ERROR);
         }
     }
 

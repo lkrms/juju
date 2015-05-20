@@ -1,5 +1,7 @@
 <?php
 
+namespace jj;
+
 /**
  * Provides various methods to assist with class autoloading.
  *
@@ -7,7 +9,7 @@
  * @author Luke Arms <luke@arms.to>
  * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-abstract class jj_Autoload
+abstract class Autoload
 {
     /**
      * Returns the path to the code file for the given class.
@@ -18,29 +20,27 @@ abstract class jj_Autoload
      */
     public static function GetClassPath($className, $mustExist = true)
     {
-        global $JJ_CLASS_MAP;
+        global $JJ_NAMESPACES;
 
         // check if we've cached the location of this class, otherwise locate it and cache
-        $locationFile = jj_Common::GetCacheFolder() . "/{$className}.location";
+        $locationFile = Common::GetCacheFolder() . "/" . str_replace("\\", "--", $className) . ".location";
 
         if ( ! (file_exists($locationFile) && file_exists($filename = file_get_contents($locationFile))))
         {
-            // juju classes use underscores to simulate namespacing, e.g. jj_namespace_SomeClass
-            $namespace      = explode("_", $className);
+            $namespace      = explode("\\", $className);
             $classFile      = array_pop($namespace);
-            $fullNamespace  = implode(".", $namespace);
-            $module         = array_shift($namespace);
+            $rootNamespace  = array_shift($namespace);
             $classPath      = implode("/", $namespace);
             $path           = "";
 
-            if ($fullNamespace && isset($JJ_CLASS_MAP[$fullNamespace]))
+            if ($classPath)
             {
-                // this picks up classes at the root of modules too
-                $path = $JJ_CLASS_MAP[$fullNamespace] . "/{$classFile}.php";
+                $classPath .= "/";
             }
-            elseif ($module && $classPath && isset($JJ_CLASS_MAP[$module]))
+
+            if ($rootNamespace && isset($JJ_NAMESPACES[$rootNamespace]))
             {
-                $path = $JJ_CLASS_MAP[$module] . "/{$classPath}/{$classFile}.php";
+                $path = $JJ_NAMESPACES[$rootNamespace] . "/{$classPath}{$classFile}.php";
             }
 
             if ( ! $path || ($mustExist && ! file_exists($path)))
@@ -54,7 +54,7 @@ abstract class jj_Autoload
 
                 if (file_exists($locationFile) && ! is_writable($locationFile) && ! @unlink($locationFile))
                 {
-                    throw new jj_Exception("Error: $locationFile is not writable.");
+                    throw new Exception("Error: $locationFile is not writable.");
                 }
 
                 file_put_contents($locationFile, $filename);
@@ -68,6 +68,18 @@ abstract class jj_Autoload
 
         return $filename;
     }
+
+    public static function LoadClass($className)
+    {
+        $path = self::GetClassPath($className);
+
+        if ($path)
+        {
+            require_once ($path);
+        }
+    }
 }
+
+spl_autoload_register('jj\Autoload::LoadClass');
 
 ?>

@@ -1,18 +1,20 @@
 <?php
 
+namespace jj\data;
+
 /**
  * Represents a SQL statement to execute against a database.
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2013 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-class jj_data_Command
+class Command
 {
     /**
      * The database connection to use.
      *
-     * @var jj_data_Connection
+     * @var Connection
      */
     public $Connection;
 
@@ -33,7 +35,7 @@ class jj_data_Command
     /**
      * The transaction within which to execute the command.
      *
-     * @var jj_data_Transaction
+     * @var Transaction
      */
     public $Transaction;
 
@@ -49,13 +51,13 @@ class jj_data_Command
 
     private $_rs;
 
-    public function __construct(jj_data_Connection $conn, $sql = null, array $params = null)
+    public function __construct(Connection $conn, $sql = null, array $params = null)
     {
-        jj_Assert::IsNotNull($conn, "conn");
+        \jj\Assert::IsNotNull($conn, "conn");
 
         if ( ! is_null($sql))
         {
-            jj_Assert::IsString($sql, "sql");
+            \jj\Assert::IsString($sql, "sql");
         }
 
         $this->Connection   = $conn;
@@ -69,7 +71,7 @@ class jj_data_Command
 
         foreach ($this->Parameters as $paramName => $param)
         {
-            if (is_object($param) && $param instanceof jj_data_IFormat)
+            if (is_object($param) && $param instanceof IFormat)
             {
                 $param = $param->DataFormat($this->Connection);
             }
@@ -120,7 +122,7 @@ class jj_data_Command
         {
             if ( ! array_key_exists($paramName, $this->_preparedParams))
             {
-                throw new jj_Exception("Error: parameter $paramName not found.", jj_Exception::CODE_GENERAL_ERROR);
+                throw new \jj\Exception("Error: parameter $paramName not found.", \jj\Exception::CODE_GENERAL_ERROR);
             }
 
             $this->_params[] = $this->_preparedParams[$paramName];
@@ -131,7 +133,7 @@ class jj_data_Command
     {
         if ($this->Connection->HasTransaction() && ! $this->Transaction)
         {
-            throw new jj_Exception("Error: transaction in progress.", jj_Exception::CODE_GENERAL_ERROR);
+            throw new \jj\Exception("Error: transaction in progress.", \jj\Exception::CODE_GENERAL_ERROR);
         }
 
         if ($this->Transaction)
@@ -198,7 +200,7 @@ class jj_data_Command
     /**
      * Executes the query against the database and builds a Reader object to handle the result set.
      *
-     * @return jj_data_Reader
+     * @return Reader
      */
     public function ExecuteReader()
     {
@@ -208,19 +210,19 @@ class jj_data_Command
         {
             $this->_rs = $rs;
 
-            return new jj_data_Reader($this);
+            return new Reader($this);
         }
         else
         {
             // let's hope we never get here
-            throw new jj_Exception("Error: no recordset returned.", jj_Exception::CODE_GENERAL_ERROR);
+            throw new \jj\Exception("Error: no recordset returned.", \jj\Exception::CODE_GENERAL_ERROR);
         }
     }
 
     /**
      * Internal use only.
      *
-     * @return ADORecordSet
+     * @return \ADORecordSet
      */
     public function _getRs()
     {
@@ -232,7 +234,7 @@ class jj_data_Command
      *
      * @return string
      */
-    public static function _getFieldTransform(ADORecordSet $rs, $field)
+    public static function _getFieldTransform(\ADORecordSet $rs, $field)
     {
         if ( ! is_object($field))
         {
@@ -255,7 +257,7 @@ class jj_data_Command
     /**
      * Internal use only.
      */
-    public static function _doFieldTransform(ADORecordSet $rs, $value, $transform)
+    public static function _doFieldTransform(\ADORecordSet $rs, $value, $transform)
     {
         switch ($transform)
         {
@@ -264,7 +266,7 @@ class jj_data_Command
                 // UTC dates are stored in the database
                 $tz = date_default_timezone_get();
                 date_default_timezone_set("UTC");
-                $ts = new jj_DateTime($rs->UnixTimeStamp($value));
+                $ts = new \jj\DateTime($rs->UnixTimeStamp($value));
                 date_default_timezone_set($tz);
 
                 return $ts;

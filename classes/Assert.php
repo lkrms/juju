@@ -1,13 +1,15 @@
 <?php
 
+namespace jj;
+
 /**
  * Just a set of simple assertion methods.
  *
  * @package juju_core
  * @author Luke Arms <luke@arms.to>
- * @copyright Copyright (c) 2012-2013 Luke Arms
+ * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-abstract class jj_Assert
+abstract class Assert
 {
     /**
      * Asserts that the given value is not null.
@@ -19,7 +21,7 @@ abstract class jj_Assert
     {
         if (is_null($val))
         {
-            throw new jj_Exception("Error: $name cannot be null.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name cannot be null.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -33,7 +35,7 @@ abstract class jj_Assert
     {
         if (empty($val))
         {
-            throw new jj_Exception("Error: $name cannot be empty.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name cannot be empty.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -47,7 +49,7 @@ abstract class jj_Assert
     {
         if ( ! is_bool($val))
         {
-            throw new jj_Exception("Error: $name must be a boolean.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name must be a boolean.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -61,7 +63,7 @@ abstract class jj_Assert
     {
         if ( ! is_int($val))
         {
-            throw new jj_Exception("Error: $name must be an integer.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name must be an integer.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -75,7 +77,7 @@ abstract class jj_Assert
     {
         if ( ! is_string($val))
         {
-            throw new jj_Exception("Error: $name must be a string.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name must be a string.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -89,7 +91,7 @@ abstract class jj_Assert
     {
         if ( ! is_numeric($val))
         {
-            throw new jj_Exception("Error: $name must be numeric.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name must be numeric.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -101,14 +103,14 @@ abstract class jj_Assert
      */
     public static function IsDateString($val, $name)
     {
-        jj_Assert::IsString($val, $name);
+        Assert::IsString($val, $name);
 
         // the easiest way to perform this test is to attempt the conversion
         $ts = strtotime($val);
 
         if ($ts === false || $ts == -1)
         {
-            throw new jj_Exception("Error: $name must be a date string.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name must be a date string.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -121,7 +123,7 @@ abstract class jj_Assert
      */
     public static function IsValidIdentifier($val, $name, array $extras = null)
     {
-        jj_Assert::IsString($val, $name);
+        Assert::IsString($val, $name);
 
         if (is_array($extras))
         {
@@ -130,7 +132,7 @@ abstract class jj_Assert
 
         if ( ! preg_match("/^[_a-zA-Z0-9]+$/", $val))
         {
-            throw new jj_Exception("Error: $name ($val) must be a valid identifier.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name ($val) must be a valid identifier.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -145,7 +147,7 @@ abstract class jj_Assert
     {
         if ( ! in_array($val, $array))
         {
-            throw new jj_Exception("Error: $name must be valid.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name must be valid.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -157,11 +159,11 @@ abstract class jj_Assert
      */
     public static function FileExists($val, $name)
     {
-        jj_Assert::IsString($val, $name);
+        Assert::IsString($val, $name);
 
         if ( ! file_exists($val))
         {
-            throw new jj_Exception("Error: $name ($val) does not exist.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name ($val) does not exist.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -173,11 +175,11 @@ abstract class jj_Assert
      */
     public static function IsWritable($val, $name)
     {
-        jj_Assert::IsString($val, $name);
+        Assert::IsString($val, $name);
 
         if ( ! is_writable($val))
         {
-            throw new jj_Exception("Error: $name ($val) is not writable.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name ($val) is not writable.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -189,11 +191,11 @@ abstract class jj_Assert
      */
     public static function ClassExists($val, $name)
     {
-        jj_Assert::IsString($val, $name);
+        Assert::IsString($val, $name);
 
         if ( ! class_exists($val))
         {
-            throw new jj_Exception("Error: $name ($val) is not defined.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name ($val) is not defined.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -206,11 +208,11 @@ abstract class jj_Assert
      */
     public static function ClassExtends($val, $class, $name)
     {
-        jj_Assert::IsString($val, $name);
+        Assert::IsString($val, $name);
 
         if ( ! is_subclass_of($val, $class))
         {
-            throw new jj_Exception("Error: $name ($val) does not inherit from $class.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name ($val) does not inherit from $class.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -223,11 +225,11 @@ abstract class jj_Assert
      */
     public static function ClassIsOrExtends($val, $class, $name)
     {
-        jj_Assert::IsString($val, $name);
+        Assert::IsString($val, $name);
 
         if ( ! is_a($val, $class))
         {
-            throw new jj_Exception("Error: $name ($val) does not inherit from $class.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name ($val) does not inherit from $class.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -240,12 +242,12 @@ abstract class jj_Assert
      */
     public static function ClassImplementsInterface($val, $interface, $name)
     {
-        jj_Assert::ClassExists($val, $name);
-        $class = new ReflectionClass($val);
+        Assert::ClassExists($val, $name);
+        $class = new \ReflectionClass($val);
 
         if ( ! $class->implementsInterface($interface))
         {
-            throw new jj_Exception("Error: $name ($val) does not implement interface $interface.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name ($val) does not implement interface $interface.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 
@@ -260,7 +262,7 @@ abstract class jj_Assert
     {
         if ( ! is_object($val) || ! is_a($val, $class))
         {
-            throw new jj_Exception("Error: $name is not an instance of $class.", jj_Exception::CODE_ASSERTION_FAILURE);
+            throw new Exception("Error: $name is not an instance of $class.", Exception::CODE_ASSERTION_FAILURE);
         }
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+namespace jj\data;
+
 /**
  * Represents a connection to a database.
  *
@@ -7,7 +9,7 @@
  * @author Luke Arms <luke@arms.to>
  * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-class jj_data_Connection
+class Connection
 {
     /**
      * MySQL.
@@ -59,39 +61,39 @@ class jj_data_Connection
 
     /**
      *
-     * @var ADOConnection
+     * @var \ADOConnection
      */
     private $_conn;
 
     /**
      *
-     * @var jj_data_ConnectionInfo
+     * @var ConnectionInfo
      */
     private $_info;
 
     /**
      *
-     * @var jj_data_Transaction
+     * @var Transaction
      */
     private $_trans;
 
     /**
      * Returns a new connection instance.
      *
-     * @param jj_data_ConnectionInfo $info If null, jj_data_ConnectionInfo::GetDefault will be used to supply connection info.
+     * @param ConnectionInfo $info If null, ConnectionInfo::GetDefault will be used to supply connection info.
      */
-    public function __construct(jj_data_ConnectionInfo $info = null)
+    public function __construct(ConnectionInfo $info = null)
     {
         if (is_null($info))
         {
-            $info = jj_data_ConnectionInfo::GetDefault();
+            $info = ConnectionInfo::GetDefault();
         }
 
         $this->_conn = ADONewConnection($info->GetDSN());
 
         if ( ! $this->_conn)
         {
-            throw new jj_Exception("Error: could not connect to the database.", jj_Exception::CODE_GENERAL_ERROR);
+            throw new \jj\Exception("Error: could not connect to the database.", \jj\Exception::CODE_GENERAL_ERROR);
         }
 
         $this->_info   = $info;
@@ -104,7 +106,7 @@ class jj_data_Connection
     /**
      * Internal use only.
      *
-     * @return ADOConnection
+     * @return \ADOConnection
      */
     public function _getConn()
     {
@@ -112,9 +114,9 @@ class jj_data_Connection
     }
 
     /**
-     * Returns the jj_data_ConnectionInfo object associated with this connection.
+     * Returns the ConnectionInfo object associated with this connection.
      *
-     * @return jj_data_ConnectionInfo
+     * @return ConnectionInfo
      */
     public function GetInfo()
     {
@@ -126,12 +128,12 @@ class jj_data_Connection
      *
      * @param string $sql The query to execute.
      * @param array $params Parameters for the query, keyed on parameter name.
-     * @param jj_data_Transaction $trans The transaction to participate in (optional).
+     * @param Transaction $trans The transaction to participate in (optional).
      * @return integer The number of rows affected.
      */
-    public function ExecuteNonQuery($sql, $params = null, jj_data_Transaction $trans = null)
+    public function ExecuteNonQuery($sql, $params = null, Transaction $trans = null)
     {
-        $cmd = new jj_data_Command($this, $sql, $params);
+        $cmd = new Command($this, $sql, $params);
 
         if ($trans)
         {
@@ -146,12 +148,12 @@ class jj_data_Connection
      *
      * @param string $sql The query to execute.
      * @param array $params Parameters for the query, keyed on parameter name.
-     * @param jj_data_Transaction $trans The transaction to participate in (optional).
+     * @param Transaction $trans The transaction to participate in (optional).
      * @return mixed The value in the first column of the first row in the result set.
      */
-    public function ExecuteScalar($sql, $params = null, jj_data_Transaction $trans = null)
+    public function ExecuteScalar($sql, $params = null, Transaction $trans = null)
     {
-        $cmd = new jj_data_Command($this, $sql, $params);
+        $cmd = new Command($this, $sql, $params);
 
         if ($trans)
         {
@@ -166,12 +168,12 @@ class jj_data_Connection
      *
      * @param string $sql The query to execute.
      * @param array $params Parameters for the query, keyed on parameter name.
-     * @param jj_data_Transaction $trans The transaction to participate in (optional).
-     * @return jj_data_Reader A new Reader object.
+     * @param Transaction $trans The transaction to participate in (optional).
+     * @return Reader A new Reader object.
      */
-    public function ExecuteReader($sql, $params = null, jj_data_Transaction $trans = null)
+    public function ExecuteReader($sql, $params = null, Transaction $trans = null)
     {
-        $cmd = new jj_data_Command($this, $sql, $params);
+        $cmd = new Command($this, $sql, $params);
 
         if ($trans)
         {
@@ -186,7 +188,7 @@ class jj_data_Connection
      *
      * @param string $table The name of the table to which data will be added.
      * @param array $vals Values to insert, keyed on field name.
-     * @return jj_data_Command A new Command object, ready to execute.
+     * @return Command A new Command object, ready to execute.
      */
     public function BuildInsertCommand($table, array $vals)
     {
@@ -204,7 +206,7 @@ class jj_data_Connection
         $fields  = implode(", ", $fields);
         $values  = implode(", ", $values);
 
-        return new jj_data_Command($this, "insert into $table ($fields) values ($values)", $params);
+        return new Command($this, "insert into $table ($fields) values ($values)", $params);
     }
 
     /**
@@ -240,20 +242,20 @@ class jj_data_Connection
     /**
      * Starts a transaction on the database.
      *
-     * @param integer $isolationLevel One of the jj_data_Transaction::ISOLATION_LEVEL_* values.
-     * @return jj_data_Transaction A new Transaction object.
+     * @param integer $isolationLevel One of the Transaction::ISOLATION_LEVEL_* values.
+     * @return Transaction A new Transaction object.
      */
-    public function BeginTransaction($isolationLevel = jj_data_Transaction::ISOLATION_LEVEL_REPEATABLE_READ)
+    public function BeginTransaction($isolationLevel = Transaction::ISOLATION_LEVEL_REPEATABLE_READ)
     {
         if ( ! $this->HasTransaction())
         {
-            $trans         = new jj_data_Transaction($this, $isolationLevel);
+            $trans         = new Transaction($this, $isolationLevel);
             $this->_trans  = $trans;
 
             return $trans;
         }
 
-        throw new jj_Exception("Error: connection already has an associated transaction.", jj_Exception::CODE_GENERAL_ERROR);
+        throw new \jj\Exception("Error: connection already has an associated transaction.", \jj\Exception::CODE_GENERAL_ERROR);
     }
 
     /**

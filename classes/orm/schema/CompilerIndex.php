@@ -1,5 +1,7 @@
 <?php
 
+namespace jj\orm\schema;
+
 /**
  * Internal use only.
  *
@@ -7,7 +9,7 @@
  * @author Luke Arms <luke@arms.to>
  * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-class jj_orm_schema_CompilerIndex
+class CompilerIndex
 {
     public $IndexName;
 
@@ -24,16 +26,16 @@ class jj_orm_schema_CompilerIndex
     public $IndexIsCurrent;
 
     /**
-     * @var jj_orm_schema_CompilerClass
+     * @var CompilerClass
      */
     private $_class;
 
     /**
-     * @var jj_orm_schema_Compiler
+     * @var Compiler
      */
     private $_compiler;
 
-    public function __construct(jj_orm_schema_CompilerClass $class, $indexName)
+    public function __construct(CompilerClass $class, $indexName)
     {
         $this->_class     = $class;
         $this->_compiler  = $class->GetCompiler();
@@ -77,7 +79,7 @@ class jj_orm_schema_CompilerIndex
 
     public function GetIndexInfo()
     {
-        $ind             = new jj_schema_IndexInfo();
+        $ind             = new \jj\schema\IndexInfo();
         $ind->IndexName  = $this->IndexName;
         $ind->Unique     = $this->Unique;
         $ind->Columns    = $this->GetColumnNames();

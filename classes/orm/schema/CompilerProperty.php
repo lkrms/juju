@@ -1,5 +1,7 @@
 <?php
 
+namespace jj\orm\schema;
+
 /**
  * Internal use only.
  *
@@ -7,7 +9,7 @@
  * @author Luke Arms <luke@arms.to>
  * @copyright Copyright (c) 2012-2015 Luke Arms
  */
-class jj_orm_schema_CompilerProperty
+class CompilerProperty
 {
     public $ColumnName;
 
@@ -30,7 +32,7 @@ class jj_orm_schema_CompilerProperty
     public $ObjectTypeName;
 
     /**
-     * @var jj_orm_schema_CompilerClass
+     * @var CompilerClass
      */
     public $ObjectType;
 
@@ -57,21 +59,21 @@ class jj_orm_schema_CompilerProperty
     public $ColumnIsCurrent;
 
     /**
-     * @var jj_orm_schema_CompilerClass
+     * @var CompilerClass
      */
     private $_class;
 
     /**
-     * @var jj_orm_schema_Compiler
+     * @var Compiler
      */
     private $_compiler;
 
-    public function __construct(jj_orm_schema_CompilerClass $class, $columnName)
+    public function __construct(CompilerClass $class, $columnName)
     {
         $this->_class        = $class;
         $this->_compiler     = $class->GetCompiler();
         $this->ColumnName    = $columnName;
-        $this->PropertyName  = jj_Common::GetCamelCase($columnName);
+        $this->PropertyName  = \jj\Common::GetCamelCase($columnName);
     }
 
     public function Prepare()
@@ -84,7 +86,7 @@ class jj_orm_schema_CompilerProperty
         if (in_array($this->DataType, array("object", "objectSet")))
         {
             // we can't store a reference to anything unless it has a primary key
-            jj_Assert::IsNotEmpty($this->ObjectType->PrimaryKey, "{$this->ObjectType->TableName} primary key");
+            \jj\Assert::IsNotEmpty($this->ObjectType->PrimaryKey, "{$this->ObjectType->TableName} primary key");
 
             // create a copy of this array--we're going to empty it as we proceed
             $objectStorageColumns  = $this->ObjectStorageColumns;
@@ -93,7 +95,7 @@ class jj_orm_schema_CompilerProperty
             // for objectSets, the first element/s of the array will provide custom names for "parent" key fields
             if ($this->DataType == "objectSet")
             {
-                $ind = new jj_orm_schema_CompilerIndex($this->_class, "_idx_parent_" . $this->_class->TableName . "_" . $this->ColumnName);
+                $ind = new CompilerIndex($this->_class, "_idx_parent_" . $this->_class->TableName . "_" . $this->ColumnName);
                 $this->ObjectSetIndexes[] = $ind;
 
                 foreach ($this->_class->PrimaryKey as $pkProp)
@@ -104,7 +106,7 @@ class jj_orm_schema_CompilerProperty
 
                         if (is_null($columnName))
                         {
-                            throw new jj_Exception("Error: not enough information in objectStorageColumns for {$this->ColumnName} in {$this->_class->TableName}.");
+                            throw new \jj\Exception("Error: not enough information in objectStorageColumns for {$this->ColumnName} in {$this->_class->TableName}.");
                         }
                     }
                     else
@@ -118,7 +120,7 @@ class jj_orm_schema_CompilerProperty
 
                 if ( ! $this->ObjectStorageTable)
                 {
-                    $this->ObjectStorageTable = "_ref_" . $this->_class->TableName . "_" . $this->ColumnName . "_" . $this->ObjectType->TableName;
+                    $this->ObjectStorageTable = "_ref_" . $this->_class->TableName . "_" . $this->ColumnName;
                 }
 
                 $this->FullObjectStorageTable  = $this->_compiler->TablePrefix . $this->ObjectStorageTable;
@@ -127,7 +129,7 @@ class jj_orm_schema_CompilerProperty
             }
 
             // for both objects and objectSets, remaining array elements will provide custom names for "child" key fields
-            $ind = new jj_orm_schema_CompilerIndex($this->_class, "_idx_" . ($this->DataType == "objectSet" ? "child_" : "") . $this->_class->TableName . "_" . $this->ColumnName);
+            $ind = new CompilerIndex($this->_class, "_idx_" . ($this->DataType == "objectSet" ? "child_" : "") . $this->_class->TableName . "_" . $this->ColumnName);
 
             foreach ($this->ObjectType->PrimaryKey as $pkProp)
             {
@@ -137,7 +139,7 @@ class jj_orm_schema_CompilerProperty
 
                     if (is_null($columnName))
                     {
-                        throw new jj_Exception("Error: not enough information in objectStorageColumns for {$this->ColumnName} in {$this->_class->TableName}.");
+                        throw new \jj\Exception("Error: not enough information in objectStorageColumns for {$this->ColumnName} in {$this->_class->TableName}.");
                     }
                 }
                 else
@@ -252,7 +254,7 @@ class jj_orm_schema_CompilerProperty
 
     private function GetColumnInfo()
     {
-        $col                 = new jj_schema_ColumnInfo();
+        $col                 = new \jj\schema\ColumnInfo();
         $col->ColumnName     = $this->ColumnName;
         $col->DataType       = $this->DataType;
         $col->DefaultValue   = $this->DefaultValue;
