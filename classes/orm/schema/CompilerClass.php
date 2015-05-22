@@ -80,14 +80,6 @@ class CompilerClass
 
             $this->CompiledClassName  = $this->FullClassName . "_entity";
             $this->CompiledClassPath  = \jj\Autoload::GetClassPath($this->CompiledClassName, false);
-
-            // we never overwrite non-compiled code, so if it already exists it doesn't need to be writable
-            if ( ! file_exists($this->ClassPath))
-            {
-                $this->CheckWritable($this->ClassPath);
-            }
-
-            $this->CheckWritable($this->CompiledClassPath);
         }
 
         if ( ! $this->SkipSql)
